@@ -1,0 +1,12 @@
+{
+  "name": "ESAS Reviewer",
+  "short_name": "ESAS",
+  "description": "Engineering Sciences and Allied Subjects reviewer",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eaf6ff",
+  "theme_color": "#e9f7ff",
+  "icons": [
+    {"src": "./assets/brand/app-icon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any"}
+  ]
+}
