@@ -1,7 +1,7 @@
 {
-  "name": "ESAS Reviewer",
+  "name": "ESAS Reviewer App",
   "short_name": "ESAS",
-  "description": "Engineering Sciences and Allied Subjects reviewer",
+  "description": "ESAS Reviewer app for electrical engineering board exam practice, available online and as an Android APK",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#eaf6ff",
