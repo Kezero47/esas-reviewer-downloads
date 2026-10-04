@@ -81,6 +81,15 @@ body[data-theme='dark'] .splash-track{background:rgba(154,238,199,.16)}
 
 /* Messenger-style support inbox and persistent chat history. */
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.source-detail-card{width:100%;color:var(--ink);text-align:left;display:block}
+.source-detail-card h3{margin:13px 0 5px}.source-detail-card p{margin:0}
+.source-detail-link{display:block;margin-top:12px;color:var(--accent);font-size:.75rem;font-weight:800}
+.source-inline-link{border:0;background:transparent;color:var(--muted);font-size:.75rem;text-align:left;padding:10px 2px;margin:2px 0 10px;width:100%}
+.source-inline-link:hover,.source-inline-link:focus-visible{color:var(--accent)}
+.source-details-modal h2{margin:0}.source-details-modal h3{margin:18px 0 12px}
+.source-detail-list{margin:0;display:grid;gap:0}
+.source-detail-list div{display:grid;grid-template-columns:minmax(90px,.75fr) minmax(0,1.5fr);gap:12px;padding:11px 0;border-bottom:1px solid var(--soft)}
+.source-detail-list div:last-child{border-bottom:0}.source-detail-list dt{font-size:.73rem;font-weight:800;color:var(--muted)}.source-detail-list dd{margin:0;font-size:.8rem;overflow-wrap:anywhere}
 .messenger-shell{margin-top:10px;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--card-strong);box-shadow:var(--shadow)}
 .chat-header{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--card-strong);position:sticky;top:0;z-index:3}
 .chat-header strong,.chat-header small{display:block}.chat-header small{margin-top:2px;color:var(--muted);font-size:.64rem}

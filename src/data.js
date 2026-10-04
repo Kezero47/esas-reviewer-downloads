@@ -38,7 +38,9 @@ export function setPublishedQuestions(items=[]){
   for(const question of Array.isArray(items)?items:[]){
     if(!question?.id||embeddedIds.has(question.id)||seen.has(question.id))continue;
     if(!Array.isArray(question.choices)||question.choices.length!==4)continue;
-    if(!Number.isInteger(question.answer)||question.answer<0||question.answer>3)continue;
+    const ready=question.quality==='ready';
+    if(ready&&(!Number.isInteger(question.answer)||question.answer<0||question.answer>3))continue;
+    if(!ready&&question.answer!==null&&question.answer!==undefined&&(!Number.isInteger(question.answer)||question.answer<0||question.answer>3))continue;
     seen.add(question.id);
     const normalized=splitLawsSubject(question);
     accepted.push(normalized);
@@ -71,13 +73,13 @@ export const demoQuestions = [
 ];
 
 export const sourceRegistry = [
-  {id:'past-exams', title:'ESAS Past Exams 1–12 (2026) with Key to Corrections', pages:55, status:'80 questions imported from Exam 1 · remaining exams pending', kind:'Past exams'},
-  {id:'fluids-book', title:'ESAS Book: Fluid Mechanics Solving and Definitions', pages:56, status:'79 scored questions imported · 1 held for a source inconsistency', kind:'Reference book'},
-  {id:'fluids-terms', title:'ESAS Book: Fluid Mechanics Terminology', pages:18, status:'100 terminology questions imported', kind:'Reference book'},
-  {id:'past-2025-set-a', title:'ESAS Past Exam 2025: Set A', pages:0, status:'448 verified unique questions imported from Exams 17, 21, 25, and 27', kind:'Past exams'},
-  {id:'past-2025-exam-16', title:'ESAS Past Exam 2025: Exam 16', pages:0, status:'68 verified unique questions imported', kind:'Past exams'},
-  {id:'past-2025-exam-14', title:'ESAS Past Exam 2025: Exam 14', pages:0, status:'52 verified unique questions imported after duplicate removal · 1 five-choice item held', kind:'Past exams'},
-  {id:'owner-import', title:'Owner-approved JSONL imports', pages:0, status:'Questions published through the verified owner workflow', kind:'Owner import'}
+  {id:'past-exams',title:'Chemistry/Engineering Materials • Past Exam • 2026 • ESAS Exams 1–12',fullTitle:'ESAS Past Exams 1–12 with Key to Corrections',subjectIds:['chemistry'],sourceType:'past-exam',sourceYear:'2026',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:55,status:'80 questions imported from Exam 1 · remaining exams pending',kind:'Past exams'},
+  {id:'fluids-book',title:'Fluid Mechanics • Reference Book • Undated • Solving and Definitions',fullTitle:'ESAS Book: Fluid Mechanics Solving and Definitions',subjectIds:['fluids'],sourceType:'reference-book',sourceYear:'Undated',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:56,status:'79 scored questions imported · 1 held for a source inconsistency',kind:'Reference book'},
+  {id:'fluids-terms',title:'Fluid Mechanics • Reference Book • Undated • Terminology',fullTitle:'ESAS Book: Fluid Mechanics Terminology',subjectIds:['fluids'],sourceType:'reference-book',sourceYear:'Undated',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:18,status:'100 terminology questions imported',kind:'Reference book'},
+  {id:'past-2025-set-a',title:'Multiple ESAS Subjects • Past Exam • 2025 • RSU Set A',fullTitle:'RSU ESAS Past Exam 2025 Set A — Exams 17, 21, 25 and 27',subjectIds:['management','fluids','economics','safety','ethics-contracts','strength'],sourceType:'past-exam',sourceYear:'2025',uploaderName:'Kezero',uploadedAt:'2026-09-28',pages:0,status:'448 verified unique questions imported from Exams 17, 21, 25 and 27',kind:'Past exams'},
+  {id:'past-2025-exam-16',title:'Fluid Mechanics & Ethics/Contracts • Past Exam • 2025 • RSU Exam 16 Set A',fullTitle:'Romblon State University — EE Correlation 2 — ESAS Exam 16 Set A',subjectIds:['fluids','ethics-contracts'],sourceType:'past-exam',sourceYear:'2025',uploaderName:'Kezero',uploadedAt:'2026-10-04',pages:10,status:'80 source records retained · 62 verified and playable · 18 held for review',kind:'Past exams'},
+  {id:'past-2025-exam-14',title:'Fluid Mechanics & Ethics/Contracts • Past Exam • 2025 • RSU Exam 14 Set A',fullTitle:'Romblon State University — EE Correlation 2 — ESAS Exam 14 Set A',subjectIds:['fluids','ethics-contracts'],sourceType:'past-exam',sourceYear:'2025',uploaderName:'Kezero',uploadedAt:'2026-10-04',pages:10,status:'80 source records retained · 56 verified and playable · 24 held for review',kind:'Past exams'},
+  {id:'owner-import',title:'Multiple ESAS Subjects • Owner Import • Undated • Approved JSONL',fullTitle:'Owner-approved JSONL imports',subjectIds:[],sourceType:'owner-import',sourceYear:'Undated',uploaderName:'Shown per approved import',uploadedAt:'Shown per approved import',pages:0,status:'Questions published through the verified owner workflow',kind:'Owner import'}
 ];
 
 export const initialSubmissions = [

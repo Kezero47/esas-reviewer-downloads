@@ -1,6 +1,6 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.3",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v1.0.3/ESAS-Reviewer-v1.0.3.apk",
-  "releaseNotes": "Redesigned Messages as Messenger-style conversations with saved chat history, Delete for me, and sender-only Unsend."
+  "versionCode": 5,
+  "versionName": "1.0.4",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v1.0.4/ESAS-Reviewer-v1.0.4.apk",
+  "releaseNotes": "Source Correction Part 1 retains all 160 Exam 14/16 records: 118 verified questions are playable and 42 disputed items remain visible but are excluded from scored quizzes. Also adds subject-aware source filtering and standardized source details."
 }

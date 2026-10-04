@@ -12,6 +12,18 @@ export function normalizeSelectedSources(value,availableSourceIds=[]){
   return [...new Set(requested)].filter(id=>allowed.has(id));
 }
 
+export function sourceIdsForSubjects(questions,selectedSubjects=[]){
+  const selected=new Set(selectedSubjects);
+  return [...new Set(questions
+    .filter(question=>selected.has(question.subject))
+    .map(question=>question.sourceId))];
+}
+
+export function reconcileSelectedSources(value,availableSourceIds=[]){
+  const selected=normalizeSelectedSources(value,availableSourceIds);
+  return selected.length?selected:[...availableSourceIds];
+}
+
 export function filterQuizQuestions(questions,setup){
   const availableSubjectIds=[...new Set(questions.map(question=>question.subject))];
   const availableSourceIds=[...new Set(questions.map(question=>question.sourceId))];
