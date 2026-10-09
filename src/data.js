@@ -1,3 +1,4 @@
+import {ownerExamSources} from './owner-exam-sources.js';
 import {importedQuestions} from './imported-questions.js';
 
 export function splitLawsSubject(question){
@@ -25,6 +26,8 @@ export const subjects = [
   { id:'physics', name:'Physics', icon:'✧', color:'cyan', topics:['Motion','Waves','Thermodynamics'] },
   { id:'pec', name:'Philippine Electrical Code (PEC)', icon:'§', color:'amber', topics:['Philippine Electrical Code'] },
   { id:'ethics-contracts', name:'IIEE & Electrical Engineering Code of Ethics, Contracts, Obligations and Specifications', icon:'⚖', color:'blue', topics:['IIEE & Electrical Engineering Code of Ethics','Contracts, Obligation and Specification'] },
+  { id:'computers', name:'Computer Fundamentals and Programming', icon:'⌘', color:'blue', topics:['Computer Fundamentals and Programming'] },
+  { id:'ee-laws', name:'Electrical Engineering Laws and Codes', icon:'§', color:'amber', topics:['Electrical Engineering Laws and Codes'] },
   { id:'thermo', name:'Thermodynamics', icon:'◉', color:'coral', topics:['Temperature','First Law','Cycles'] },
 ];
 
@@ -44,6 +47,8 @@ export function setPublishedQuestions(items=[]){
     seen.add(question.id);
     const normalized=splitLawsSubject(question);
     accepted.push(normalized);
+    if(!sourceRegistry.some(s=>s.id===normalized.sourceId))sourceRegistry.push({id:normalized.sourceId,title:normalized.sourceFile||normalized.section||normalized.sourceId,fullTitle:normalized.sourceFile||normalized.section||normalized.sourceId,subjectIds:[normalized.subject],sourceType:'owner-import',sourceYear:normalized.sourceYear||'Undated',uploaderName:'Owner',uploadedAt:normalized.uploadedAt||'Not recorded',pages:0,status:'Owner-published questions',kind:'Owner import',folderPath:String(normalized.importFolder||'Owner imports').split('/').map(x=>x.trim()).filter(Boolean)});
+    else{const source=sourceRegistry.find(s=>s.id===normalized.sourceId);if(!source.subjectIds.includes(normalized.subject))source.subjectIds.push(normalized.subject);}
     if(!subjects.some(item=>item.id===normalized.subject)){
       subjects.push({
         id:normalized.subject,
@@ -73,7 +78,7 @@ export const demoQuestions = [
 ];
 
 export const sourceRegistry = [
-  {id:'past-exams',title:'Chemistry/Engineering Materials • Past Exam • 2026 • ESAS Exams 1–12',fullTitle:'ESAS Past Exams 1–12 with Key to Corrections',subjectIds:['chemistry'],sourceType:'past-exam',sourceYear:'2026',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:55,status:'80 questions imported from Exam 1 · remaining exams pending',kind:'Past exams'},
+  ...ownerExamSources,
   {id:'fluids-book',title:'Fluid Mechanics • Reference Book • Undated • Solving and Definitions',fullTitle:'ESAS Book: Fluid Mechanics Solving and Definitions',subjectIds:['fluids'],sourceType:'reference-book',sourceYear:'Undated',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:56,status:'79 scored questions imported · 1 held for a source inconsistency',kind:'Reference book'},
   {id:'fluids-terms',title:'Fluid Mechanics • Reference Book • Undated • Terminology',fullTitle:'ESAS Book: Fluid Mechanics Terminology',subjectIds:['fluids'],sourceType:'reference-book',sourceYear:'Undated',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:18,status:'100 terminology questions imported',kind:'Reference book'},
   {id:'past-2025-set-a',title:'Multiple ESAS Subjects • Past Exam • 2025 • RSU Set A',fullTitle:'RSU ESAS Past Exam 2025 Set A — Exams 17, 21, 25 and 27',subjectIds:['management','fluids','economics','safety','ethics-contracts','strength'],sourceType:'past-exam',sourceYear:'2025',uploaderName:'Kezero',uploadedAt:'2026-09-28',pages:0,status:'448 verified unique questions imported from Exams 17, 21, 25 and 27',kind:'Past exams'},
