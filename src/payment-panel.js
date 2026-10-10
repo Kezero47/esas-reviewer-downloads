@@ -1,6 +1,12 @@
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c =>
   ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
+export function facebookActivationPanel({facebookUrl, email, price = 99, printable = false}) {
+  let url = "";
+  try { const parsed = new URL(facebookUrl); if (parsed.protocol === "https:" && ["facebook.com", "www.facebook.com", "m.facebook.com", "m.me", "www.messenger.com", "messenger.com"].includes(parsed.hostname)) url = parsed.href; } catch {}
+  return `<div class="glass pad"><h3>${printable ? "Printable exam activation · ₱249" : `Account activation · ₱${escape(price)} / 30 days`}</h3><p>Message our Facebook Page to request activation. Include your registered account email: <strong>${escape(email || "Sign in to see your email")}</strong>.</p><p>Ask the owner for payment instructions, then send your payment reference privately. Access is activated after the owner verifies payment. Never send your password.</p>${url ? `<a class="btn wide" href="${escape(url)}" data-facebook-link="${escape(url)}" target="_blank" rel="noopener noreferrer">Message for activation</a>` : `<p class="notice">Our Facebook Page is being set up. The activation link will appear here when it is ready. Please wait for the official link before paying.</p>`}<p class="footnote">${printable ? "This is a separate one-time printable exam purchase." : "The 3-day free trial has no automatic charge. Printable exams are a separate ₱249 one-time purchase."}</p></div>`;
+}
+
 export function paymentPanel({enabled, automatic, signedIn, nativeAvailable, busy, price,
   qrData, showName, displayName}) {
   if (!enabled) return '';

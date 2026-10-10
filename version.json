@@ -1,6 +1,6 @@
 {
-  "versionCode": 6,
-  "versionName": "2.0.0",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.0.0/ESAS-Reviewer-v2.0.0.apk",
-  "releaseNotes": "Major update: 840 owner-confirmed questions across RSU Exams 1\u201314 (2026), source folder hierarchy and owner sorting, stable source-selection scrolling, multiple saved quizzes, wrong-answer retries outside Rank Mode, 72-hour trial, manual subscriptions, and printable Word exams with a final answer key."
+  "versionCode": 7,
+  "versionName": "2.1.0",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.1.0/ESAS-Reviewer-v2.1.0.apk",
+  "releaseNotes": "Real web accounts and owner account visibility; guest entry removed; profile and GCash QR image fixes; daily 50-question tournaments and weekly 350-question rankings with study-access rewards."
 }
