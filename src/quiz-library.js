@@ -1,3 +1,4 @@
+import {choiceOrder,shuffleValues} from './quiz-engine.js';
 export const quizId = () => globalThis.crypto?.randomUUID?.() || `quiz-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 export function migrateQuizLibrary(value, legacySession=null, legacyResult=null) {
   const entries=(Array.isArray(value)?value:[]).filter(x=>x?.id&&x.session?.ids?.length&&x.session.mode!=='ranked');
@@ -20,4 +21,13 @@ export function wrongAnswerIds(questions,result) {
 export function createWrongAnswerRetry(questions,result) {
   const ids=wrongAnswerIds(questions,result);if(!ids.length)return null;
   return {libraryId:quizId(),ids,choiceOrders:Object.fromEntries(ids.map(id=>[id,result.choiceOrders?.[id]||[0,1,2,3]])),answers:{},index:0,category:'Retry wrong answers',mode:'retry',practice:true,timer:false,elapsedMs:0,segmentStartedAt:Date.now(),startedAt:null};
+}
+
+export function createExamRetry(questions,result,shuffle=false) {
+  if(!result || result.mode==='ranked')return null;
+  const pool=new Map(questions.map(q=>[q.id,q]));
+  let ids=result.ids.filter(id=>pool.has(id));if(!ids.length)return null;
+  if(shuffle)ids=shuffleValues(ids);
+  return {...createWrongAnswerRetry(questions,{...result,answers:Object.fromEntries(ids.map(id=>[id,-1]))}),ids,
+    choiceOrders:Object.fromEntries(ids.map(id=>[id,shuffle?choiceOrder(pool.get(id)):result.choiceOrders?.[id]||[0,1,2,3]])),category:shuffle?'Retry and shuffle':'Retry exam'};
 }

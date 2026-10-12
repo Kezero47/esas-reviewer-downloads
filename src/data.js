@@ -1,3 +1,4 @@
+import {correctAnswer} from './answer-corrections.js';
 import {ownerExamSources} from './owner-exam-sources.js';
 import {importedQuestions} from './imported-questions.js';
 
@@ -11,7 +12,7 @@ export function splitLawsSubject(question){
   return question;
 }
 
-export const questionBank = importedQuestions.map(splitLawsSubject);
+export const questionBank = importedQuestions.map(correctAnswer).map(splitLawsSubject);
 export const playableQuestions = questionBank.filter(q=>q.quality==='ready');
 let publishedQuestionIds=new Set();
 export const subjects = [

@@ -1,4 +1,4 @@
-import {filterQuizQuestions,shuffleValues} from './quiz-engine.js';
+import {filterQuizQuestions,shuffleValues,choiceOrder} from './quiz-engine.js';
 
 export function normalizeQuizCount(value,available){
   const maximum=Math.max(0,Math.floor(Number(available)||0));
@@ -33,7 +33,7 @@ export function createNoRepeatQuizSelection(questions,setup,cycles={},random=Mat
   const unanswered=matches.filter(question=>!completed.has(question.id));
   const ordered=setup.random===false?unanswered:shuffleValues(unanswered,random);
   const ids=ordered.slice(0,normalizeQuizCount(setup.count,ordered.length)).map(question=>question.id);
-  const choiceOrders=Object.fromEntries(ids.map(id=>[id,setup.shuffleChoices?shuffleValues([0,1,2,3],random):[0,1,2,3]]));
+  const choiceOrders=Object.fromEntries(ids.map(id=>[id,setup.shuffleChoices?choiceOrder(questions.find(q=>q.id===id),random):[0,1,2,3]]));
   return {key,ids,choiceOrders,available:matches.length,remaining:unanswered.length,exhausted:unanswered.length===0,cycle:entry.cycle};
 }
 
@@ -75,7 +75,7 @@ export function createRankedSelection(questions,subjectId,progress,count=20,rand
   const unanswered=shuffleValues(subjectQuestions.filter(question=>!completed.has(question.id)),random);
   const previous=shuffleValues(subjectQuestions.filter(question=>completed.has(question.id)),random),ordered=unanswered.length?unanswered:previous;
   const ids=ordered.slice(0,normalizeQuizCount(count,ordered.length)).map(question=>question.id);
-  return {ids,choiceOrders:Object.fromEntries(ids.map(id=>[id,shuffleValues([0,1,2,3],random)])),unansweredAvailable:unanswered.length,subjectTotal:subjectQuestions.length};
+  return {ids,choiceOrders:Object.fromEntries(ids.map(id=>[id,choiceOrder(questions.find(q=>q.id===id),random)])),unansweredAvailable:unanswered.length,subjectTotal:subjectQuestions.length};
 }
 
 export function recordRankedAttempt(progress,questions,attempt){

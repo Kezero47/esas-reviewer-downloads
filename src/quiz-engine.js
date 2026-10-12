@@ -31,11 +31,12 @@ export function filterQuizQuestions(questions,setup){
   const selectedSources=normalizeSelectedSources(setup.sources??setup.source,availableSourceIds);
   const selected=new Set(selectedSubjects);
   const sources=new Set(selectedSources);
-  return questions.filter(question=>
+  const matches = questions.filter(question=>
     selected.has(question.subject)
     &&sources.has(question.sourceId)
     &&(setup.type==='All'||question.type===setup.type)
   );
+  return selectedSources.length > 1 ? uniqueQuestions(matches) : matches;
 }
 
 export function shuffleValues(values,random=Math.random){
@@ -53,7 +54,7 @@ export function createQuizSelection(questions,setup,random=Math.random){
   const ids=matches.slice(0,Number(setup.count)).map(question=>question.id);
   const choiceOrders=Object.fromEntries(ids.map(id=>[
     id,
-    setup.shuffleChoices?shuffleValues([0,1,2,3],random):[0,1,2,3]
+    setup.shuffleChoices?choiceOrder(questions.find(q=>q.id===id),random):[0,1,2,3]
   ]));
   return {ids,choiceOrders};
 }
@@ -89,4 +90,20 @@ export function practiceChoiceState(originalChoiceIndex,selectedAnswer,correctAn
   if(originalChoiceIndex===correctAnswer)return 'correct';
   if(originalChoiceIndex===selectedAnswer)return 'incorrect';
   return '';
+}
+
+const normalizedText = value => String(value).normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
+export function uniqueQuestions(rows) {
+  const seen=new Set();
+  return rows.filter(q=>{if(!q.prompt||!q.choices?.length)return true;const key=JSON.stringify([q.subject,normalizedText(q.prompt),q.choices.map(normalizedText).sort()]);if(seen.has(key))return false;seen.add(key);return true;});
+}
+export function choiceOrder(question, random=Math.random) {
+  const indices=question.choices.map((_,i)=>i);
+  const fixed=indices.find(i=>isAggregateChoice(question.choices[i]));
+  if(fixed===undefined)return shuffleValues(indices,random);
+  const order=shuffleValues(indices.filter(i=>i!==fixed),random);order.splice(Math.min(3,order.length),0,fixed);return order;
+}
+
+export function isAggregateChoice(choice) {
+  return /^(all|none)\s+(?:of\s+)?(?:the\s+)?(?:above|these|mentioned|choices|options)\b/i.test(String(choice).trim().replace(/\bo\s+f\b/i,'of'));
 }

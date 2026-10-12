@@ -1,8 +1,9 @@
+import {callTournament} from './tournament-client.js';
 // The browser uses the same account callbacks as the Android bridge.
 export function installWebBridge(){
   if(window.NativeBridge)return;
   window.ESAS_WEB=true;
-  let sdk,auth,db,functions,ready,listeners=[],usersListener;
+  let sdk,auth,db,ready,tournamentApiUrl='',listeners=[],usersListener;
   const emit=(name,data)=>window.esasNative?.[name]?.(JSON.stringify(data));
   const fail=e=>emit('operation',{error:e?.message||String(e)});
   const run=fn=>Promise.resolve(ready).then(fn).catch(fail);
@@ -21,7 +22,7 @@ export function installWebBridge(){
     if(!user)return;
     listeners.push(sdk.onSnapshot(sdk.doc(db,'users',user.uid),async row=>{
       const d=row.data()||{},paid=ms(d.accessUntil),trial=d.accessSource==='Owner revoked'?0:ms(d.trialStartedAt)+72*3600000;
-      emit('entitlement',{accessUntil:Math.max(paid,trial),trialUntil:trial,source:trial>paid?'Free trial':d.accessSource||'Free',printableExamUnlocked:d.printableExamUnlocked===true});
+      emit('entitlement',{premiumUntil:ms(d.premiumUntil),accessUntil:Math.max(paid,trial),trialUntil:trial,source:trial>paid?'Free trial':d.accessSource||'Free',printableExamUnlocked:d.printableExamUnlocked===true});
       const details={...d};if(!details.photoData&&d.photoPath){try{details.photoData=await sdk.getDownloadURL(sdk.ref(sdk.getStorage(),d.photoPath));}catch{}}
       emit('profileDetails',details);
     },fail));
@@ -56,15 +57,16 @@ export function installWebBridge(){
     saveSourceOrganization:json=>run(async()=>{requireOwner();await sdk.setDoc(sdk.doc(db,'public_config','app'),{sourceOrganization:JSON.parse(json),updatedAt:sdk.serverTimestamp()},{merge:true});emit('operation',{message:'Source arrangement saved.'})}),
     grantAccess:(uid,days)=>run(async()=>{requireOwner();if(!Number.isInteger(days)||days<1||days>365)throw Error('Invalid access duration.');const ref=sdk.doc(db,'users',uid);await sdk.runTransaction(db,async tx=>{const row=await tx.get(ref);tx.update(ref,{accessUntil:sdk.Timestamp.fromMillis(Math.max(Date.now(),ms(row.data()?.accessUntil))+days*86400000),accessSource:'Owner granted',accessUpdatedAt:sdk.serverTimestamp()})});emit('operation',{message:'Access granted.'})}),
     grantPrintableAccess:uid=>run(async()=>{requireOwner();await sdk.updateDoc(sdk.doc(db,'users',uid),{printableExamUnlocked:true,printableExamUpdatedAt:sdk.serverTimestamp()});emit('operation',{message:'Printable exam access granted.'})}),
-    revokeAccess:uid=>run(async()=>{requireOwner();await sdk.updateDoc(sdk.doc(db,'users',uid),{accessUntil:sdk.Timestamp.fromMillis(0),accessSource:'Owner revoked',accessUpdatedAt:sdk.serverTimestamp()});emit('operation',{message:'Access revoked.'})}),
-    tournamentCall:json=>run(async()=>{try{const result=await sdk.httpsCallable(functions,'tournament')(JSON.parse(json));emit('tournament',result.data)}catch(e){emit('tournament',{error:e.message})}}),
+    revokeAccess:uid=>run(async()=>{requireOwner();await callTournament({apiUrl:tournamentApiUrl,getToken:()=>requireUser().getIdToken(),data:{action:'revokePlan',uid}});emit('operation',{message:'Plan access revoked.'})}),
+    tournamentCall:json=>run(async()=>{try{const result=await callTournament({apiUrl:tournamentApiUrl,getToken:()=>requireUser().getIdToken(),data:JSON.parse(json)});emit('tournament',result)}catch(e){emit('tournament',{error:e.message})}}),
     savePrintableExam:(name,base64)=>{const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);},
     loadDraft:()=>{},loadPublishedQuestions:()=>{},loadSubmissions:()=>{},loadContentManager:()=>{},loadLeaderboard:()=>{},submitQuizResult:()=>{},
   };
   window.NativeBridge=new Proxy(bridge,{get:(target,key)=>key in target?target[key]:()=>fail(Error('This feature is available in the Android app.'))});
-  ready=import('./firebase-web.bundle.js').then(module=>{
+  ready=import('./firebase-web.bundle.js').then(async module=>{
+    const backend=await fetch('./tournament-config.json',{cache:'no-store'});if(backend.ok)tournamentApiUrl=(await backend.json()).apiUrl||'';
     sdk=module;const config=window.ESAS_FIREBASE_CONFIG;if(!config?.apiKey)throw Error('Web account configuration is missing.');
-    const app=sdk.initializeApp(config);auth=sdk.getAuth(app);db=sdk.initializeFirestore(app,{localCache:sdk.persistentLocalCache({tabManager:sdk.persistentMultipleTabManager()})});functions=sdk.getFunctions(app,'asia-southeast1');
+    const app=sdk.initializeApp(config);auth=sdk.getAuth(app);db=sdk.initializeFirestore(app,{localCache:sdk.persistentLocalCache({tabManager:sdk.persistentMultipleTabManager()})});
     sdk.onAuthStateChanged(auth,async user=>{stop();emit('auth',user?{uid:user.uid,email:user.email,name:user.displayName,owner:owner()}:{});accountData();try{if(user)await ensureProfile(user);}catch(e){fail(e)}});
   }).catch(e=>{fail(e);throw e});
 }

@@ -1,25 +1,20 @@
 const normalizedType = question => String(question?.type || '').trim().toLowerCase();
 
-export function freeQuestionsForSubject(questions, subjectId, limit = 20) {
-  const subjectQuestions = questions.filter(question => question.subject === subjectId);
-  const terms = subjectQuestions.filter(question => normalizedType(question) !== 'solving');
-  const solving = subjectQuestions.filter(question => normalizedType(question) === 'solving');
-
-  if (!solving.length) return terms.slice(0, limit);
-
-  const selected = [...terms.slice(0, 10), ...solving.slice(0, 10)];
-  if (selected.length >= limit) return selected.slice(0, limit);
-
-  const chosen = new Set(selected.map(question => question.id));
-  const remainder = subjectQuestions.filter(question => !chosen.has(question.id));
-  return [...selected, ...remainder.slice(0, limit - selected.length)];
+// Weekly allowance changes at Friday 00:00 in the Philippines (UTC+8).
+export function freeWeek(now = Date.now()) {
+  return Math.floor((now + 8 * 3600000 - Date.UTC(1970, 0, 2)) / (7 * 86400000));
 }
-
-export function freeQuestionIds(questions) {
-  const subjects = [...new Set(questions.map(question => question.subject))];
-  return new Set(subjects.flatMap(subjectId =>
-    freeQuestionsForSubject(questions, subjectId).map(question => question.id)
-  ));
+export function freeQuestionsForSubject(questions, subjectId, limit = 40, now = Date.now()) {
+  const rows = questions.filter(q => q.subject === subjectId).sort((a,b)=>a.id.localeCompare(b.id));
+  if (!rows.length) return [];
+  const offset = ((freeWeek(now) * limit) % rows.length + rows.length) % rows.length;
+  return Array.from({length: Math.min(limit, rows.length)}, (_, i) => rows[(offset+i)%rows.length]);
+}
+export function freeQuestionIds(questions, now = Date.now()) {
+  return new Set([...new Set(questions.map(q=>q.subject))].flatMap(id=>freeQuestionsForSubject(questions,id,40,now).map(q=>q.id)));
+}
+export function hasPremiumAccess({owner=false, accessUntil=0, plan='', now=Date.now()}={}) {
+  return Boolean(owner) || plan === 'premium' && Number(accessUntil) > now;
 }
 
 export function hasFullAccess({ owner = false, accessUntil = 0, now = Date.now() } = {}) {
@@ -28,7 +23,7 @@ export function hasFullAccess({ owner = false, accessUntil = 0, now = Date.now()
 
 export function accessibleQuestions(questions, entitlement = {}) {
   if (hasFullAccess(entitlement)) return questions;
-  const allowed = freeQuestionIds(questions);
+  const allowed = freeQuestionIds(questions, entitlement.now ?? Date.now());
   return questions.filter(question => allowed.has(question.id));
 }
 
