@@ -1,9 +1,10 @@
+import {ohmsLaw,acPower,reactance,resistorNetwork} from './electrical-tools.js';
 import {evaluateExpression,evaluateComplexExpression,evaluateBaseExpression,formatted,fractionOf,integrate,differentiate,parseMatrix,transpose,multiplyMatrices,determinant,inverse,parseVector,vectorOperation,statistics,solvePolynomial,complexOperation,constants,units,convertUnits} from './calc-engine.js';
 import {equationTypes,equationSlots,solveSelectedEquation} from './equation-engine.js';
 
 export function initCalculator(s){s.calcPanel??='display';s.calcMode??='COMP';s.calcAngle??='RAD';s.calcShift??=false;s.calcAlpha??=false;s.calcHyp??=false;s.calcFraction??=false;s.calcInsertMode??=true;s.calcMemory??=0;s.calcVariables??={A:0,B:0,C:0,D:0,E:0,F:0,X:0,Y:0,M:0};s.calcPending??='';s.calcTool??='Integration';s.calcToolResult??='';s.calcInputs??={};s.calcHistory??=[];s.calcExpression??='';s.calcAnswer??='0';s.calcCursor??=s.calcExpression.length;s.calcMenuIndex??=0;s.calcReplayIndex??=-1;s.calcTemplate??=null;s.calcSearch??='';s.calcBase??='DEC';s.calcBaseBlock??=0;s.calcEquation??={type:null,values:[],index:0,cursor:0,solutions:[],solutionIndex:0};s.calcStatements??=null}
 const modes=['COMP','CPLX','STAT','BASE','EQN','TABLE','MATX','VCTR'];
-const apps=[['Scientific Constants','π'],['Metric Conversions','⇄'],['Integration','∫'],['Differentiation','d/dx'],['Matrix','▦'],['Vector','⬡'],['Statistics','▥'],['Trigonometry','△'],['Complex Numbers','ℂ'],['Equation Solver','x²'],['Table','≡'],['Memory / Recall','M'],['History','↶']];
+const apps=[['Scientific Constants','π'],['Metric Conversions','⇄'],['Integration','∫'],['Differentiation','d/dx'],['Matrix','▦'],['Vector','⬡'],['Statistics','▥'],['Trigonometry','△'],['Complex Numbers','ℂ'],['Equation Solver','x²'],['Table','≡'],['Memory / Recall','M'],['History','↶'],['Ohm’s Law','Ω'],['AC Power','P'],['Reactance','∿'],['Resistor Network','R']];
 // Labels and their actions share a single map. Empty alternate labels are deliberately unassigned.
 export const calculatorKeys={
   Mode:{shift:'SET UP'},CONV:{shift:'C-VALUE'},CALC:{shift:'Solve',alpha:'='},'x⁻¹':{shift:'x!',alpha:':'},'∫dx':{shift:'d/dx',mode:'∠'},ENG:{shift:'←ENG',alpha:'i'},
@@ -14,7 +15,7 @@ export const calculatorKeys={
   '0':{shift:'ROUND'},'.':{shift:'Rand',alpha:'iRand'},EXP:{shift:'π',alpha:'e'},Ans:{shift:'DRG▶'}
 };
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const field=(s,key,label,placeholder,kind='text')=>`<label class="field">${label}<input type="${kind}" data-calc-field="${key}" value="${esc(s.calcInputs[key]||'')}" placeholder="${esc(placeholder)}"></label>`;
+const field=(s,key,label,placeholder,kind='text')=>`<label class="field">${label}<input type="${kind}" ${kind==='number'?'step="any" inputmode="decimal"':''} data-calc-field="${key}" value="${esc(s.calcInputs[key]||'')}" placeholder="${esc(placeholder)}"></label>`;
 const numberField=(s,key,label,placeholder)=>field(s,key,label,placeholder,'number');
 const result=s=>s.calcToolResult?`<div class="calc-tool-result" role="status"><span class="overline">RESULT</span><strong>${esc(s.calcToolResult)}</strong></div>`:'';
 const displayedAnswer=s=>{let n=Number(s.calcAnswer);if(!s.calcFraction||!Number.isFinite(n))return String(s.calcAnswer);let value=fractionOf(n);if(!s.calcMixedFraction||!value.includes('/'))return value;let [top,bottom]=value.split('/').map(Number),whole=Math.trunc(top/bottom),remainder=Math.abs(top%bottom);return whole&&remainder?`${whole} ${remainder}/${bottom}`:value};
@@ -37,18 +38,22 @@ export function calculatorView(s,{overlay=false}={}){initCalculator(s);
   const upper=(key,area)=>`<span class="upper-position" style="grid-area:${area}">${keyButton(s,key,`upper-key ${key==='Shift'?'shift-key':key==='Alpha'?'alpha-key':key==='Apps'?'apps-key':''} ${key==='Shift'&&s.calcShift||key==='Alpha'&&s.calcAlpha?'latched':''}`)}</span>`;
   const scientific=['a/b','√(','xʸ','x²','log(','ln(','(-)','°′″','hyp','sin(','cos(','tan(','RCL','Abs(','(',')','F↔D','M+'];
   const numeric=['7','8','9','DEL','CA','4','5','6','×','÷','1','2','3','+','−','0','.','EXP','Ans','='];
-  return `<div class="calculator-device ${overlay?'calculator-compact':''}" role="group" aria-label="Scientific calculator">
-    <div class="device-brand"><strong>ESAS</strong><span>F-789SGA II inspired</span></div>
+  return `<div class="calculator-device ${s.calcAdvanced?'advanced':''} ${overlay?'calculator-compact':''}" role="group" aria-label="Scientific calculator">
+    <div class="device-brand"><strong>Calculator</strong><span>ESAS · Scientific</span></div>
+    <div class="calc-toolbar"><button data-key="Apps">Tools</button><button data-key="Mode">Mode</button><button data-calc-angle-next aria-label="Change angle unit">${s.calcAngle}</button><button data-calc-tool="History">History</button><button data-calc-return aria-label="Return to keypad">Keypad</button></div>
     <div class="device-lcd ${s.calcPanel==='display'?'':'lcd-menu'}">${internalScreen(s)}</div>
-    <div class="upper-keys">
+    <div class="calc-keypad" ${['display','eqedit'].includes(s.calcPanel)?'':'hidden'}>
+    <button class="calc-expand" data-calc-expand aria-expanded="${!!s.calcAdvanced}">${s.calcAdvanced?'− Less':'＋ Advanced keys'}</button>
+    <div class="calc-shortcuts" ${s.calcAdvanced?'hidden':''}>${['a/b','√(','x²','sin(','cos(','tan('].map(k=>keyButton(s,k,'scientific-key')).join('')}</div>
+    <div class="calc-advanced" ${s.calcAdvanced?'':'hidden'}><div class="upper-keys">
       ${upper('Shift','shift')}${upper('Alpha','alpha')}
       <div class="dpad" aria-label="Four-direction edit pad"><button data-calc-control="up" aria-label="Move up">▲</button><button data-calc-control="left" aria-label="Move left">◀</button><span>✦</span><button data-calc-control="right" aria-label="Move right">▶</button><button data-calc-control="down" aria-label="Move down">▼</button></div>
       ${upper('Mode','mode')}${upper('ON','on')}${upper('Apps','apps')}${upper('CONV','conv')}
       ${upper('CALC','calc')}${upper('x⁻¹','reciprocal')}${upper('∫dx','integral')}${upper('ENG','eng')}
     </div>
     <div class="scientific-row">${scientific.map(k=>keyButton(s,k,'scientific-key')).join('')}</div>
-    <div class="numeric-row">${numeric.map(k=>keyButton(s,k,`numeric-key ${k==='='?'equals':''} ${['DEL','CA'].includes(k)?'utility-key':''}`)).join('')}</div>
-    <div class="device-foot">${s.calcPending?'Select an Alpha variable · ':''}${s.calcTemplate?'Arrows move across the active math fields':s.calcPanel==='display'?'Arrows edit or replay · Apps, Mode and CONV are on this keypad':'Arrows select · = confirms · CA returns'}</div>
+    </div><div class="numeric-row">${numeric.map(k=>keyButton(s,k,`numeric-key ${k==='='?'equals':''} ${['DEL','CA'].includes(k)?'utility-key':''}`)).join('')}</div>
+    </div><div class="device-foot">${s.calcPending?'Select an Alpha variable · ':''}${s.calcTemplate?'Arrows move across the active math fields':s.calcPanel==='display'?'Tools: conversions, equations, calculus & electrical':'Arrows select · = confirms · CA returns'}</div>
   </div>`
 }
 function equationView(s){let e=s.calcEquation;if(s.calcPanel==='eqmenu')return `<div class="lcd-title">EQN · Choose equation</div><div class="lcd-eqn-list">${equationTypes.map((item,i)=>`<button class="${i===s.calcMenuIndex?'selected':''}" data-calc-equation="${item.id}"><b>${i+1}</b><span>${esc(item.label)}<small>${esc(item.description)}</small></span></button>`).join('')}</div>`;
@@ -75,6 +80,10 @@ function constantsPanel(s){let q=s.calcSearch.toLowerCase(),matches=constants.fi
 function matrixPanel(s){return `<div class="grid2"><button class="tile compact" data-calc-tool="Matrix"><span class="glyph violet">▦</span><h3>Matrix</h3><p>Up to 4×4</p></button><button class="tile compact" data-calc-tool="Vector"><span class="glyph cyan">⬡</span><h3>Vector</h3><p>2D to 4D</p></button></div><p class="footnote">Select a workspace to calculate.</p>`}
 export function toolView(s){initCalculator(s);let t=s.calcTool;return `<div class="calc-tool-header"><span class="glyph violet">${apps.find(([name])=>name===t)?.[1]||'∑'}</span><div><div class="overline">APPS / FUNCTIONS</div><h2>${esc(t)}</h2></div></div><div class="glass pad">${toolForm(s,t)}${result(s)}</div>`}
 function toolForm(s,t){
+  if(t==='Ohm’s Law')return `<label class="field">Find<select data-calc-field="ohmSolve">${['voltage','current','resistance'].map(x=>`<option value="${x}" ${(s.calcInputs.ohmSolve||'voltage')===x?'selected':''}>${x}</option>`).join('')}</select></label>${(s.calcInputs.ohmSolve||'voltage')!=='voltage'?numberField(s,'ohmVoltage','Voltage (V)','12'):''}${(s.calcInputs.ohmSolve||'voltage')!=='current'?numberField(s,'ohmCurrent','Current (A)','2'):''}${(s.calcInputs.ohmSolve||'voltage')!=='resistance'?numberField(s,'ohmResistance','Resistance (Ω)','6'):''}<button class="btn wide" data-calc-op="electrical-ohm">Calculate</button><p class="footnote">V = IR · P = VI. For resistive DC circuits.</p>`;
+  if(t==='AC Power')return `<label class="field">System<select data-calc-field="powerPhase"><option value="single" ${s.calcInputs.powerPhase!=='three'?'selected':''}>Single phase</option><option value="three" ${s.calcInputs.powerPhase==='three'?'selected':''}>Balanced three phase</option></select></label>${numberField(s,'powerVoltage','RMS voltage (V; line-to-line for three phase)','230')}${numberField(s,'powerCurrent','RMS line current (A)','10')}${numberField(s,'powerFactor','Power factor (0 to 1)','0.8')}<button class="btn wide" data-calc-op="electrical-power">Calculate power</button><p class="footnote">Sinusoidal steady state. Reactive power is a magnitude; leading/lagging sign is not assigned.</p>`;
+  if(t==='Reactance')return `${numberField(s,'frequency','Frequency (Hz)','60')}${numberField(s,'inductance','Inductance (mH)','100')}${numberField(s,'capacitance','Capacitance (µF)','10')}<button class="btn wide" data-calc-op="electrical-reactance">Calculate</button><p class="footnote">Ideal components: XL, XC, and LC resonant frequency.</p>`;
+  if(t==='Resistor Network')return `${field(s,'resistances','Resistances (Ω), separated by commas','100, 200, 300')}<button class="btn wide" data-calc-op="electrical-resistors">Calculate</button><p class="footnote">Equivalent resistance with all listed resistors in series or all in parallel.</p>`;
   if(t==='Integration'||t==='Differentiation')return `${field(s,'expression','Function of x','e.g. sin(x) or x^2')}${t==='Integration'?`${numberField(s,'a','Lower limit','0')}${numberField(s,'b','Upper limit','3.14159')}`:numberField(s,'point','Evaluate at x','1')}<button class="btn wide" data-calc-op="calculate-tool">Calculate</button><p class="footnote">Numerical ${t.toLowerCase()}; use x as the variable. Results are approximations.</p>`;
   if(t==='Matrix')return `${field(s,'matrixA','Matrix A','1, 2; 3, 4')}${field(s,'matrixB','Matrix B (for A × B)','5, 6; 7, 8')}<div class="chips">${['determinant','inverse','transpose','multiply'].map(op=>`<button class="pill" data-calc-op="matrix-${op}">${op}</button>`).join('')}</div><p class="footnote">Rows are separated by semicolons; entries by commas. Maximum size: 4×4.</p>`;
   if(t==='Vector')return `${field(s,'vectorA','Vector A','1, 2, 3')}${field(s,'vectorB','Vector B','4, 5, 6')}<div class="chips">${['magnitude','dot','cross','add','subtract'].map(op=>`<button class="pill" data-calc-op="vector-${op}">${op}</button>`).join('')}</div>`;
@@ -174,6 +183,10 @@ export function calculatorControl(s,direction){initCalculator(s);if(s.calcPower=
 }
 export function runCalculatorOperation(s,op){initCalculator(s);let v=k=>Number(s.calcInputs[k]),input=k=>s.calcInputs[k]||'',output;
   try{
+    if(op==='electrical-ohm'){const x=ohmsLaw({solve:input('ohmSolve')||'voltage',voltage:input('ohmVoltage'),current:input('ohmCurrent'),resistance:input('ohmResistance')});s.calcToolResult=`V = ${formatted(x.voltage)} V · I = ${formatted(x.current)} A · R = ${formatted(x.resistance)} Ω · P = ${formatted(x.power)} W`;return;}
+    if(op==='electrical-power'){const x=acPower({voltage:input('powerVoltage'),current:input('powerCurrent'),powerFactor:input('powerFactor'),phase:input('powerPhase')||'single'});s.calcToolResult=`P = ${formatted(x.active)} W · S = ${formatted(x.apparent)} VA · |Q| = ${formatted(x.reactive)} var`;return;}
+    if(op==='electrical-reactance'){const x=reactance({frequency:input('frequency'),inductance:input('inductance'),capacitance:input('capacitance')});s.calcToolResult=`XL = ${formatted(x.inductive)} Ω · XC = ${formatted(x.capacitive)} Ω · f₀ = ${formatted(x.resonance)} Hz`;return;}
+    if(op==='electrical-resistors'){const x=resistorNetwork(input('resistances'));s.calcToolResult=`Series = ${formatted(x.series)} Ω · Parallel = ${formatted(x.parallel)} Ω`;return;}
     if(op==='clear-history'){s.calcHistory=[];s.calcToolResult='History cleared';return}
     if(op==='swap-units'){let a=s.calcInputs.from,b=s.calcInputs.to;s.calcInputs.from=b;s.calcInputs.to=a;return}
     if(op==='convert'){let category=input('category')||'Length',names=Object.keys(units[category]);output=formatted(convertUnits(v('value'),category,input('from')||names[0],input('to')||names[1]));s.calcToolResult=output+' '+(input('to')||names[1]);return}

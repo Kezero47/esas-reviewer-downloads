@@ -3,7 +3,7 @@ import {callTournament} from './tournament-client.js';
 export function installWebBridge(){
   if(window.NativeBridge)return;
   window.ESAS_WEB=true;
-  let sdk,auth,db,ready,tournamentApiUrl='',listeners=[],usersListener;
+  let sdk,auth,db,ready,tournamentApiUrl='',listeners=[],usersListener,messagesListener;
   const emit=(name,data)=>window.esasNative?.[name]?.(JSON.stringify(data));
   const fail=e=>emit('operation',{error:e?.message||String(e)});
   const run=fn=>Promise.resolve(ready).then(fn).catch(fail);
@@ -11,7 +11,7 @@ export function installWebBridge(){
   const owner=()=>auth.currentUser?.email?.toLowerCase()==='kerrmagramo47@gmail.com'&&auth.currentUser.emailVerified;
   const requireUser=()=>{if(!auth.currentUser)throw Error('Sign in first.');return auth.currentUser};
   const requireOwner=()=>{if(!owner())throw Error('Verified owner access required.');};
-  function stop(){listeners.splice(0).forEach(f=>f());usersListener?.();usersListener=null;}
+  function stop(){listeners.splice(0).forEach(f=>f());usersListener?.();usersListener=null;messagesListener?.();messagesListener=null;}
   async function ensureProfile(user){
     const ref=sdk.doc(db,'users',user.uid);
     await sdk.runTransaction(db,async tx=>{const row=await tx.get(ref);if(!row.exists())tx.set(ref,{uid:user.uid,email:user.email,name:(user.displayName||user.email.split('@')[0]).slice(0,80),lastSeenAt:sdk.serverTimestamp(),trialStartedAt:sdk.serverTimestamp()});else tx.update(ref,{lastSeenAt:sdk.serverTimestamp()});});
@@ -26,6 +26,7 @@ export function installWebBridge(){
       const details={...d};if(!details.photoData&&d.photoPath){try{details.photoData=await sdk.getDownloadURL(sdk.ref(sdk.getStorage(),d.photoPath));}catch{}}
       emit('profileDetails',details);
     },fail));
+    bridge.loadMessages();
     if(owner())bridge.loadUsers();
   }
   async function pickImage(kind){
@@ -51,6 +52,10 @@ export function installWebBridge(){
     signOut:()=>run(()=>sdk.signOut(auth)),
     loadAccountData:()=>run(accountData),
     loadUsers:()=>run(()=>{requireOwner();usersListener?.();usersListener=sdk.onSnapshot(sdk.collection(db,'users'),rows=>emit('users',{items:rows.docs.map(r=>{const d=r.data();return {...d,uid:r.id,lastSeenAt:ms(d.lastSeenAt),accessUntil:Math.max(ms(d.accessUntil),d.accessSource==='Owner revoked'?0:ms(d.trialStartedAt)+72*3600000)};}).sort((a,b)=>(a.email||'').localeCompare(b.email||''))}),fail)}),
+    loadMessages:()=>run(()=>{const user=requireUser();messagesListener?.();const all=sdk.collection(db,'messages'),ref=owner()?all:sdk.query(all,sdk.where('threadUid','==',user.uid));messagesListener=sdk.onSnapshot(ref,rows=>{if(auth.currentUser?.uid!==user.uid)return;emit('messages',{items:rows.docs.map(row=>{const d=row.data();return {...d,id:row.id,createdAt:ms(d.createdAt)};}).filter(d=>!(d.hiddenFor||[]).includes(user.uid)).sort((a,b)=>a.createdAt-b.createdAt)});},fail);}),
+    sendMessage:(requestedThreadUid,kind,body)=>run(async()=>{const user=requireUser(),text=String(body).trim(),threadUid=owner()?requestedThreadUid:user.uid;if(!threadUid||!text||text.length>2000)throw Error('Enter a message of 1 to 2000 characters.');await sdk.addDoc(sdk.collection(db,'messages'),{threadUid,senderUid:user.uid,senderName:(user.displayName||user.email||'Learner').slice(0,100),senderEmail:user.email,kind:String(kind||'Message').slice(0,30),body:text,hiddenFor:[],unsent:false,createdAt:sdk.serverTimestamp()});if(auth.currentUser?.uid===user.uid)emit('messageSent',{uid:user.uid,threadUid,body:text});}),
+    deleteMessageForMe:id=>run(async()=>{const user=requireUser();await sdk.updateDoc(sdk.doc(db,'messages',id),{hiddenFor:sdk.arrayUnion(user.uid)});}),
+    unsendMessage:id=>run(async()=>{const user=requireUser(),ref=sdk.doc(db,'messages',id),row=await sdk.getDoc(ref);if(row.data()?.senderUid!==user.uid)throw Error('Only your own messages can be unsent.');await sdk.updateDoc(ref,{body:'',unsent:true,unsentAt:sdk.serverTimestamp(),unsentByUid:user.uid});}),
     saveProfile:json=>run(async()=>{const user=requireUser(),d=JSON.parse(json);const fields={};for(const [key,max] of Object.entries({name:80,nickname:50,profession:60,address:180,phone:30}))fields[key]=String(d[key]||'').trim().slice(0,max);fields.age=Math.max(0,Math.min(120,Math.trunc(Number(d.age)||0)));fields.profileUpdatedAt=sdk.serverTimestamp();await sdk.updateDoc(sdk.doc(db,'users',user.uid),fields);emit('operation',{message:'Profile saved.'})}),
     pickProfilePhoto:()=>run(()=>pickImage('profile')),pickGcashQr:()=>run(()=>pickImage('qr')),
     saveAppConfig:json=>run(async()=>{requireOwner();await sdk.setDoc(sdk.doc(db,'public_config','app'),{...JSON.parse(json),updatedAt:sdk.serverTimestamp()},{merge:true});emit('operation',{message:'Settings saved.'})}),

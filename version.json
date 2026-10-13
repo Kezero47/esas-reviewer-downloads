@@ -1,6 +1,6 @@
 {
-  "versionCode": 10,
-  "versionName": "2.3.0",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.3.0/ESAS-Reviewer-v2.3.0.apk",
-  "releaseNotes": "A refreshed study dashboard, consistent icons, clearer quizzes and plans, accessible light and dark themes, and adaptive desktop navigation."
+  "versionCode": 11,
+  "versionName": "2.3.1",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.3.1/ESAS-Reviewer-v2.3.1.apk",
+  "releaseNotes": "Revision 1: compact calculator and electrical tools, saved printable exam previews, shuffled or disjoint sets, editable answer distribution with aggregate choices pinned to D, column layout fixes, and improved messaging."
 }
