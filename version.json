@@ -1,6 +1,6 @@
 {
-  "versionCode": 9,
-  "versionName": "2.2.0",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.2.0/ESAS-Reviewer-v2.2.0.apk",
-  "releaseNotes": "Revision 3: owner-started single-attempt tournaments, weekly Free 40-item pools, Pro and Premium plans, source-aware deduplication, owner answer corrections and top retry controls."
+  "versionCode": 10,
+  "versionName": "2.3.0",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.3.0/ESAS-Reviewer-v2.3.0.apk",
+  "releaseNotes": "A refreshed study dashboard, consistent icons, clearer quizzes and plans, accessible light and dark themes, and adaptive desktop navigation."
 }
