@@ -1,6 +1,6 @@
 {
-  "versionCode": 12,
-  "versionName": "2.3.2",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.3.2/ESAS-Reviewer-v2.3.2.apk",
-  "releaseNotes": "Clear all saved exam documents, owner stop-tournament control, phone-friendly printable exam options and user-management buttons."
+  "versionCode": 13,
+  "versionName": "2.4.0",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.4.0/ESAS-Reviewer-v2.4.0.apk",
+  "releaseNotes": "Timed quizzes with automatic grading, resizable calculator, optional Claymorphism/color/font settings, owner bulk +1 day Pro grants, online user filter, and refined layouts."
 }

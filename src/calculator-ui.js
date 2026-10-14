@@ -38,7 +38,7 @@ export function calculatorView(s,{overlay=false}={}){initCalculator(s);
   const upper=(key,area)=>`<span class="upper-position" style="grid-area:${area}">${keyButton(s,key,`upper-key ${key==='Shift'?'shift-key':key==='Alpha'?'alpha-key':key==='Apps'?'apps-key':''} ${key==='Shift'&&s.calcShift||key==='Alpha'&&s.calcAlpha?'latched':''}`)}</span>`;
   const scientific=['a/b','√(','xʸ','x²','log(','ln(','(-)','°′″','hyp','sin(','cos(','tan(','RCL','Abs(','(',')','F↔D','M+'];
   const numeric=['7','8','9','DEL','CA','4','5','6','×','÷','1','2','3','+','−','0','.','EXP','Ans','='];
-  return `<div class="calculator-device ${s.calcAdvanced?'advanced':''} ${overlay?'calculator-compact':''}" role="group" aria-label="Scientific calculator">
+  return `<div class="calculator-device ${s.calcAdvanced?'advanced':''} ${overlay?'calculator-compact':''}" role="group" aria-label="Scientific calculator"><label class="calculator-size-control">Size <input type="range" min="85" max="125" step="5" value="${s.personalization?.calcSize||100}" data-calculator-size aria-label="Calculator size"><output data-calculator-size-value>${s.personalization?.calcSize||100}%</output></label>
     <div class="device-brand"><strong>Calculator</strong><span>ESAS · Scientific</span></div>
     <div class="calc-toolbar"><button data-key="Apps">Tools</button><button data-key="Mode">Mode</button><button data-calc-angle-next aria-label="Change angle unit">${s.calcAngle}</button><button data-calc-tool="History">History</button><button data-calc-return aria-label="Return to keypad">Keypad</button></div>
     <div class="device-lcd ${s.calcPanel==='display'?'':'lcd-menu'}">${internalScreen(s)}</div>
