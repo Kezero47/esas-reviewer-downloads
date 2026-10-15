@@ -1,6 +1,6 @@
 {
-  "versionCode": 13,
-  "versionName": "2.4.0",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.4.0/ESAS-Reviewer-v2.4.0.apk",
-  "releaseNotes": "Timed quizzes with automatic grading, resizable calculator, optional Claymorphism/color/font settings, owner bulk +1 day Pro grants, online user filter, and refined layouts."
+  "versionCode": 14,
+  "versionName": "2.5.0",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.5.0/ESAS-Reviewer-v2.5.0.apk",
+  "releaseNotes": "440 Engineering Economics questions, reorganized and expanded source folders, in-app notifications, compact calculator with nested roots and typed equations, and textured Claymorphism."
 }

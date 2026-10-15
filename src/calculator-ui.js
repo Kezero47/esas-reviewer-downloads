@@ -21,7 +21,16 @@ const result=s=>s.calcToolResult?`<div class="calc-tool-result" role="status"><s
 const displayedAnswer=s=>{let n=Number(s.calcAnswer);if(!s.calcFraction||!Number.isFinite(n))return String(s.calcAnswer);let value=fractionOf(n);if(!s.calcMixedFraction||!value.includes('/'))return value;let [top,bottom]=value.split('/').map(Number),whole=Math.trunc(top/bottom),remainder=Math.abs(top%bottom);return whole&&remainder?`${whole} ${remainder}/${bottom}`:value};
 const matrixText=m=>m.map(row=>row.map(formatted).join('  ')).join('  /  ');
 const textbook=s=>esc(s).replace(/(pi|\d+(?:\.\d+|\^\d+)?)\/(\d+(?:\.\d+)?)/g,(_,a,b)=>`<span class="textbook-fraction"><span>${a==='pi'?'π':a}</span><span>${b}</span></span>`).replace(/\^\((-?\d+)\)/g,(_,n)=>`<sup>${n}</sup>`).replace(/\^(-?\d+)/g,(_,n)=>`<sup>${n}</sup>`).replace(/sqrt\(/g,'√(').replace(/cbrt\(/g,'∛(').replace(/\bpi\b/g,'π');
-const withCursor=(value,cursor,field='expression')=>{let chars=Array.from(value);if(!chars.length)return `<span class="calc-empty-box" data-calc-touch-field="${esc(field)}" data-calc-touch-pos="0">□<span class="calc-insertion">_</span></span>`;let html='';for(let i=0;i<chars.length;i++){let square=chars[i]==='^'&&chars[i+1]==='2',cube=chars[i]==='^'&&chars[i+1]==='3',power=square||cube,display=power?(square?'²':'³'):chars[i];html+=`<span class="calc-edit-char ${i===cursor||power&&i+1===cursor?'selected':''}" data-calc-touch-field="${esc(field)}" data-calc-touch-pos="${i}">${esc(display)}</span>`;if(power)i++}return html+(cursor>=chars.length?`<span class="calc-insertion" data-calc-touch-field="${esc(field)}" data-calc-touch-pos="${chars.length}">_</span>`:'')};
+const withCursor=(value,cursor,field='expression')=>{
+ const caret=pos=>`<span class="calc-insertion" data-calc-touch-field="${esc(field)}" data-calc-touch-pos="${pos}">▏</span>`;
+ const part=(start,end)=>{let html='';for(let i=start;i<end;i++){
+  const token=value.startsWith('sqrt(',i)?'sqrt(':value.startsWith('cbrt(',i)?'cbrt(':null;
+  if(token){let depth=1,close=i+token.length;for(;close<end;close++){if(value[close]==='(')depth++;if(value[close]===')'&&!--depth)break;}
+   html+=`${cursor===i?caret(i):''}<span class="nested-root"><span data-calc-touch-field="${esc(field)}" data-calc-touch-pos="${i}">${token==='sqrt('?'√':'∛'}</span><span class="nested-radicand">${part(i+token.length,close)}</span></span>`;i=close;continue;
+  }
+  const power=value[i]==='^'&&/[23]/.test(value[i+1]||'');html+=`${cursor===i?caret(i):''}<span class="calc-edit-char" data-calc-touch-field="${esc(field)}" data-calc-touch-pos="${i}">${esc(power?(value[i+1]==='2'?'²':'³'):value[i])}</span>`;if(power)i++;
+ }return html+(cursor===end?caret(end):'')||'<span class="calc-empty-box">□</span>';};return part(0,value.length);
+};
 const templateFields={integral:['lower','upper','body'],derivative:['body','at'],fraction:['numerator','denominator'],nthroot:['index','radicand'],power:['base','exponent'],logbase:['base','value'],squareRoot:['radicand'],cubeRoot:['radicand'],tenpow:['exponent'],epow:['exponent']};
 function templateView(t){const f=name=>`<span class="calc-template-field ${t.field===name?'active':''}" data-calc-touch-field="${name}" data-calc-touch-pos="${t.fields[name].length}">${t.field===name?withCursor(t.fields[name],t.cursor,name):t.fields[name]?textbook(t.fields[name]):'<span class="calc-empty-box">□</span>'}</span>`;
   if(t.kind==='integral')return `<div class="math-template integral-template"><span class="integral-symbol">∫</span><span class="integral-bounds"><span>${f('upper')}</span><span>${f('lower')}</span></span><span class="integral-body">${f('body')} dx</span></div>`;
@@ -38,7 +47,7 @@ export function calculatorView(s,{overlay=false}={}){initCalculator(s);
   const upper=(key,area)=>`<span class="upper-position" style="grid-area:${area}">${keyButton(s,key,`upper-key ${key==='Shift'?'shift-key':key==='Alpha'?'alpha-key':key==='Apps'?'apps-key':''} ${key==='Shift'&&s.calcShift||key==='Alpha'&&s.calcAlpha?'latched':''}`)}</span>`;
   const scientific=['a/b','√(','xʸ','x²','log(','ln(','(-)','°′″','hyp','sin(','cos(','tan(','RCL','Abs(','(',')','F↔D','M+'];
   const numeric=['7','8','9','DEL','CA','4','5','6','×','÷','1','2','3','+','−','0','.','EXP','Ans','='];
-  return `<div class="calculator-device ${s.calcAdvanced?'advanced':''} ${overlay?'calculator-compact':''}" role="group" aria-label="Scientific calculator"><label class="calculator-size-control">Size <input type="range" min="85" max="125" step="5" value="${s.personalization?.calcSize||100}" data-calculator-size aria-label="Calculator size"><output data-calculator-size-value>${s.personalization?.calcSize||100}%</output></label>
+  return `<div class="calculator-device ${s.calcAdvanced?'advanced':''} ${overlay?'calculator-compact':''}" role="group" aria-label="Scientific calculator"><div class="calculator-size-control"><span>Size</span> <input type="range" min="85" max="125" step="5" value="${s.personalization?.calcSize||100}" data-calculator-size aria-label="Calculator size"><output data-calculator-size-value>${s.personalization?.calcSize||100}%</output><button type="button" class="link-button" data-calculator-type>Type</button></div>${s.calcTyping?`<label class="field calc-equation-entry">Equation<input data-calculator-expression aria-label="Type calculator equation" value="${esc(calculatorExpression(s))}" placeholder="sqrt(sqrt(256)) + 2^3" autocomplete="off" spellcheck="false"></label>`:''}
     <div class="device-brand"><strong>Calculator</strong><span>ESAS · Scientific</span></div>
     <div class="calc-toolbar"><button data-key="Apps">Tools</button><button data-key="Mode">Mode</button><button data-calc-angle-next aria-label="Change angle unit">${s.calcAngle}</button><button data-calc-tool="History">History</button><button data-calc-return aria-label="Return to keypad">Keypad</button></div>
     <div class="device-lcd ${s.calcPanel==='display'?'':'lcd-menu'}">${internalScreen(s)}</div>
@@ -161,10 +170,12 @@ export function pressCalculatorKey(s,key){initCalculator(s);
   if(key==='a/b'&&!shifted&&!s.calcTemplate){startTemplate(s,'fraction');return}
   if(key==='xʸ'&&!shifted&&!s.calcTemplate){startTemplate(s,'power');return}
   if(key==='xʸ'&&shifted&&!s.calcTemplate){startTemplate(s,'nthroot');return}
-  if(key==='√('&&!shifted&&!s.calcTemplate){startTemplate(s,'squareRoot');return}
-  if(key==='√('&&shifted&&!s.calcTemplate){startTemplate(s,'cubeRoot');return}
+  if(key==='√('&&!shifted&&!s.calcTemplate&&!s.calcExpression){startTemplate(s,'squareRoot');return}
+  if(key==='√('&&shifted&&!s.calcTemplate&&!s.calcExpression){startTemplate(s,'cubeRoot');return}
   if(key==='log('&&shifted&&!s.calcTemplate){startTemplate(s,'tenpow');return}
   if(key==='ln('&&shifted&&!s.calcTemplate){startTemplate(s,'epow');return}
+  if(key==='√('){insertText(s,shifted?'cbrt()':'sqrt()');if(s.calcTemplate)s.calcTemplate.cursor--;else s.calcCursor--;return;}
+  if(key===')'){const text=s.calcTemplate?s.calcTemplate.fields[s.calcTemplate.field]:s.calcExpression,pos=s.calcTemplate?s.calcTemplate.cursor:s.calcCursor;if(text[pos]===')'){if(s.calcTemplate)s.calcTemplate.cursor++;else s.calcCursor++;return;}}
   const shiftedInsert={'x⁻¹':'!','√(':'cbrt(','xʸ':'root(','x²':'^3','log(':'10^(','ln(':'e^(','sin(':'asin(','cos(':'acos(','tan(':'atan(','(':'%',')':',','×':'nPr','÷':'nCr','+':'Pol(','−':'Rec(','.':'rand()','EXP':'pi'};
   const ordinary={'×':'*','÷':'/','−':'-','(-)':'-','x²':'^2','x⁻¹':'^(-1)','xʸ':'^','a/b':'/','EXP':'E','Ans':'Ans','Abs(':'abs(','√(':'sqrt('};
   let insert=shifted&&shiftedInsert[key]!==undefined?shiftedInsert[key]:(ordinary[key]??key);
@@ -203,3 +214,5 @@ export function runCalculatorOperation(s,op){initCalculator(s);let v=k=>Number(s
     }
   }catch(e){s.calcToolResult='Error: '+e.message}
 }
+
+export function calculatorExpression(s){const t=s.calcTemplate;if(!t)return s.calcExpression;const f=t.fields;if(t.kind==='squareRoot')return `sqrt(${f.radicand})`;if(t.kind==='cubeRoot')return `cbrt(${f.radicand})`;if(t.kind==='fraction')return `(${f.numerator})/(${f.denominator})`;if(t.kind==='power')return `(${f.base})^(${f.exponent})`;if(t.kind==='nthroot')return `root(${f.index},${f.radicand})`;return s.calcExpression||'';}

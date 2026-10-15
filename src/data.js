@@ -1,3 +1,4 @@
+import {economicsQuestions,economicsSources} from './economics-questions.js';
 import {correctAnswer} from './answer-corrections.js';
 import {ownerExamSources} from './owner-exam-sources.js';
 import {importedQuestions} from './imported-questions.js';
@@ -12,7 +13,7 @@ export function splitLawsSubject(question){
   return question;
 }
 
-export const questionBank = importedQuestions.map(correctAnswer).map(splitLawsSubject);
+export const questionBank = [...importedQuestions,...economicsQuestions].map(correctAnswer).map(splitLawsSubject);
 export const playableQuestions = questionBank.filter(q=>q.quality==='ready');
 let publishedQuestionIds=new Set();
 export const subjects = [
@@ -36,7 +37,7 @@ export function setPublishedQuestions(items=[]){
   for(let index=questionBank.length-1;index>=0;index--){
     if(publishedQuestionIds.has(questionBank[index].id))questionBank.splice(index,1);
   }
-  const embeddedIds=new Set(importedQuestions.map(question=>question.id));
+  const embeddedIds=new Set([...importedQuestions,...economicsQuestions].map(question=>question.id));
   const seen=new Set();
   const accepted=[];
   for(const question of Array.isArray(items)?items:[]){
@@ -79,6 +80,7 @@ export const demoQuestions = [
 ];
 
 export const sourceRegistry = [
+  ...economicsSources,
   ...ownerExamSources,
   {id:'fluids-book',title:'Fluid Mechanics • Reference Book • Undated • Solving and Definitions',fullTitle:'ESAS Book: Fluid Mechanics Solving and Definitions',subjectIds:['fluids'],sourceType:'reference-book',sourceYear:'Undated',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:56,status:'79 scored questions imported · 1 held for a source inconsistency',kind:'Reference book'},
   {id:'fluids-terms',title:'Fluid Mechanics • Reference Book • Undated • Terminology',fullTitle:'ESAS Book: Fluid Mechanics Terminology',subjectIds:['fluids'],sourceType:'reference-book',sourceYear:'Undated',uploaderName:'Not recorded',uploadedAt:'Not recorded',pages:18,status:'100 terminology questions imported',kind:'Reference book'},
