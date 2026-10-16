@@ -1,6 +1,6 @@
 {
-  "versionCode": 15,
-  "versionName": "2.6.0",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.6.0/ESAS-Reviewer-v2.6.0.apk",
-  "releaseNotes": "Physical scientific calculator layout, phone viewport fitting, connected nested roots, structured editing, and expanded scientific modes. See calculator Info for supported operations and numerical limits."
+  "versionCode": 16,
+  "versionName": "2.6.1",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.6.1/ESAS-Reviewer-v2.6.1.apk",
+  "releaseNotes": "Restores the tournament server connection and stops repeated background connection popups. Preserves the new calculator."
 }
