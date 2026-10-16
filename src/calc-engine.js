@@ -1,15 +1,22 @@
 // Deterministic calculator core for the UI. No expression text is evaluated as JavaScript.
 const functions={
-  sqrt:Math.sqrt,cbrt:Math.cbrt,abs:Math.abs,ln:Math.log,log:Math.log10,
+  frac:(a,b)=>a/b,mixed:(a,b,c)=>Math.sign(a||1)*(Math.abs(a)+b/c),sqrt:Math.sqrt,cbrt:Math.cbrt,abs:Math.abs,ln:Math.log,log:Math.log10,
   exp:Math.exp,floor:Math.floor,ceil:Math.ceil,round:Math.round,
   sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh,asinh:Math.asinh,acosh:Math.acosh,atanh:Math.atanh,
-  root:(n,v)=>Math.sign(v)*Math.abs(v)**(1/n),rand:()=>Math.random(),irand:(a,b)=>Math.floor(Math.random()*(Math.floor(b)-Math.ceil(a)+1))+Math.ceil(a)
+  root:(n,v)=>{if(!n||v<0&&(!Number.isInteger(n)||Math.abs(n%2)!==1))throw Error('Math ERROR');return Math.sign(v)*Math.abs(v)**(1/n)},rand:()=>Math.floor(Math.random()*1000)/1000,irand:(a,b)=>{if(![a,b].every(Number.isInteger)||a<0||b<a||b>=1e10)throw Error('Argument ERROR');return Math.floor(Math.random()*(b-a+1))+a},
+  max:(...v)=>{if(v.length<2||v.length>5)throw Error('Argument ERROR');return Math.max(...v)},min:(...v)=>{if(v.length<2||v.length>5)throw Error('Argument ERROR');return Math.min(...v)},
+  mod:(a,b)=>b===0?a:((a%b)+b)%b,gcd:(...v)=>integerFold(v,false),lcm:(...v)=>integerFold(v,true),dms:(d,m=0,s=0)=>Math.sign(d||1)*(Math.abs(d)+m/60+s/3600)
+
 };
-const factorial=n=>{if(!Number.isInteger(n)||n<0||n>170)throw Error('Factorial requires an integer from 0 to 170');let r=1;for(let i=2;i<=n;i++)r*=i;return r};
-const perm=(n,r)=>factorial(n)/factorial(n-r);
-const comb=(n,r)=>perm(n,r)/factorial(r);
-export function evaluateExpression(expression,{angle='RAD',x=0,ans=0,variables={}}={}){
-  const source=String(expression).replace(/[×]/g,'*').replace(/[÷]/g,'/').replace(/[−]/g,'-').replace(/π/g,'pi').replace(/√\(/g,'sqrt(');
+function integerFold(values,lcm){if(values.length<2||values.length>3||values.some(v=>!Number.isInteger(v)||v<0||v>9999999999999))throw Error('Argument ERROR');const gcd=(a,b)=>{while(b)[a,b]=[b,a%b];return a};return values.reduce((a,b)=>lcm?(a&&b?a/gcd(a,b)*b:0):gcd(a,b));}
+const factorial=n=>{if(!Number.isInteger(n)||n<0||n>69)throw Error('Math ERROR: factorial requires an integer from 0 to 69');let r=1;for(let i=2;i<=n;i++)r*=i;return r};
+const perm=(n,r)=>{if(![n,r].every(Number.isInteger)||n<0||n>=1e10||r<0||r>n||r>1000)throw Error('Math ERROR');let v=1;for(let j=0;j<r;j++){v*=n-j;if(v>=1e100)throw Error('Math ERROR')}return v;};
+const negativePower=(a,b)=>{const [n,d=1]=fractionOf(b).split('/').map(Number);if(d%2!==1||Math.abs(n/d-b)>1e-12)throw Error('Math ERROR');return(-1)**n*Math.abs(a)**b;};
+const comb=(n,r)=>{if(![n,r].every(Number.isInteger)||n<0||n>=1e10||r<0||r>n)throw Error('Math ERROR');r=Math.min(r,n-r);if(r>1000)throw Error('Math ERROR');let v=1;for(let j=1;j<=r;j++){v*= (n-r+j)/j;if(v>=1e100)throw Error('Math ERROR')}return v;};
+export function evaluateExpression(expression,{angle='RAD',x=0,ans=0,variables={},canon=false,rounding={}}={}){
+  let source=String(expression).replace(/[×]/g,'*').replace(/[÷]/g,'/').replace(/[−]/g,'-').replace(/π/g,'pi').replace(/√\(/g,'sqrt(');
+  // Canon permits omitted final closing parentheses (manual p.8).
+  if(canon){let depth=0;for(const c of source){if(c==='(')depth++;if(c===')')depth--;if(depth<0)throw Error('Syntax ERROR')}source+=')'.repeat(depth);}
   const tokens=[];let at=0;
   while(at<source.length){
     if(/\s/.test(source[at])){at++;continue}
@@ -18,9 +25,9 @@ export function evaluateExpression(expression,{angle='RAD',x=0,ans=0,variables={
     tokens.push(m[0]);at+=m[0].length;
   }
   // Allow calculator-style multiplication without the × key, such as 5X or 2sin(30).
-  const callable=new Set(['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','sqrt','cbrt','root','abs','ln','log','logb','exp','floor','ceil','round','rand','irand','pol','rec','pow']);
+  const callable=new Set(['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','sqrt','cbrt','root','abs','ln','log','logb','exp','floor','ceil','round','rand','irand','pol','rec','pow','max','min','mod','gcd','lcm','dms','frac','mixed']);
   for(let j=tokens.length-1;j>0;j--){let before=tokens[j-1],after=tokens[j];let valueBefore=/^(?:\d|\.)/.test(before)||before===')'||/^(?:pi|e|x|ans|[A-FMYZ])$/i.test(before);let valueAfter=/^[A-Za-z]+$/.test(after)&&!['nPr','nCr'].includes(after)||after==='(';
-    if(valueBefore&&valueAfter&&!(after==='('&&callable.has(before.toLowerCase())))tokens.splice(j,0,'*')}
+    if(valueBefore&&valueAfter&&!(after==='('&&callable.has(before.toLowerCase())))tokens.splice(j,0,canon?'@':'*')}
   let i=0;
   const peek=()=>tokens[i],take=()=>tokens[i++];
   const isNumber=t=>t!==undefined&&/^(?:\d|\.)/.test(t);
@@ -33,8 +40,8 @@ export function evaluateExpression(expression,{angle='RAD',x=0,ans=0,variables={
       const name=t.toLowerCase();
       if(peek()==='('){take();let args=[];if(peek()!==')'){do{args.push(parse(0));if(peek()!==',')break;take()}while(true)}if(take()!==')')throw Error('Missing closing parenthesis');
         const rad=v=>angle==='DEG'?v*Math.PI/180:angle==='GRAD'?v*Math.PI/200:v,deg=v=>angle==='DEG'?v*180/Math.PI:angle==='GRAD'?v*200/Math.PI:v;
-        const special={sin:v=>Math.sin(rad(v)),cos:v=>Math.cos(rad(v)),tan:v=>Math.tan(rad(v)),asin:v=>deg(Math.asin(v)),acos:v=>deg(Math.acos(v)),atan:v=>deg(Math.atan(v)),npr:perm,ncr:comb,pow:Math.pow,logb:(base,value)=>Math.log(value)/Math.log(base),pol:(a,b)=>{variables.Y=deg(Math.atan2(b,a));return Math.hypot(a,b)},rec:(r,t)=>{variables.Y=r*Math.sin(rad(t));return r*Math.cos(rad(t))}};
-        const fn=special[name]||functions[name];if(!fn)throw Error('Unknown function: '+t);return fn(...args)
+        const special={round:v=>canon?(rounding.notation==='Fix'?Number(v.toFixed(rounding.digits)):Number(v.toPrecision(rounding.notation==='Sci'?(rounding.digits||10):10))):Math.round(v),sin:v=>Math.sin(rad(v)),cos:v=>Math.cos(rad(v)),tan:v=>{if(canon&&(Math.abs(v)>=(angle==='DEG'?9e9:angle==='GRAD'?1e10:157079632.7)||Math.abs(Math.cos(rad(v)))<1e-14))throw Error('Math ERROR');return Math.tan(rad(v))},asin:v=>deg(Math.asin(v)),acos:v=>deg(Math.acos(v)),atan:v=>deg(Math.atan(v)),npr:perm,ncr:comb,pow:Math.pow,logb:(base,value)=>Math.log(value)/Math.log(base),pol:(a,b)=>{variables.Y=deg(Math.atan2(b,a));variables.X=Math.hypot(a,b);return variables.X},rec:(r,t)=>{variables.Y=r*Math.sin(rad(t));variables.X=r*Math.cos(rad(t));return variables.X}};
+        const fn=special[name]||functions[name];if(!fn)throw Error('Unknown function: '+t);if(canon){const arity={frac:2,mixed:3,root:2,pow:2,logb:2,npr:2,ncr:2,irand:2,pol:2,rec:2,mod:2,rand:0};if(!['min','max','gcd','lcm','dms'].includes(name)&&args.length!==(arity[name]??1))throw Error('Argument ERROR');if(['sin','cos','tan'].includes(name)&&Math.abs(args[0])>=(angle==='DEG'?9e9:angle==='GRAD'?1e10:157079632.7))throw Error('Math ERROR');}return fn(...args)
       }
       if(name==='pi')return Math.PI;if(name==='e')return Math.E;if(name==='x')return x;if(name==='ans')return Number(ans);
       if(Object.hasOwn(variables,t.toUpperCase()))return Number(variables[t.toUpperCase()]);
@@ -43,31 +50,44 @@ export function evaluateExpression(expression,{angle='RAD',x=0,ans=0,variables={
     throw Error('Unexpected '+t)
   }
   function parse(min){let left=atom();while(true){let op=peek();if(op==='!'||op==='%'){if(50<min)break;take();left=op==='!'?factorial(left):left/100;continue}
-      const bp={'+':10,'-':10,'*':20,'/':20,nPr:25,nCr:25,'^':30}[op];if(bp===undefined||bp<min)break;take();let right=parse(op==='^'?bp:bp+1);
-      left=op==='+'?left+right:op==='-'?left-right:op==='*'?left*right:op==='/'?left/right:op==='nPr'?perm(left,right):op==='nCr'?comb(left,right):left**right
+      const bp={'+':10,'-':10,'*':20,'/':20,'@':27,nPr:25,nCr:25,'^':30}[op];if(bp===undefined||bp<min)break;take();let right=parse(op==='^'?bp:bp+1);
+      left=op==='+'?left+right:op==='-'?left-right:op==='*'||op==='@'?left*right:op==='/'?left/right:op==='nPr'?perm(left,right):op==='nCr'?comb(left,right):canon&&left<0&&!Number.isInteger(right)?negativePower(left,right):left**right
     }return left}
   if(tokens.length===0)throw Error('Enter an expression');const result=parse(0);
-  if(i!==tokens.length)throw Error('Unexpected '+tokens[i]);if(!Number.isFinite(result))throw Error('Result outside supported range');return result
+  if(i!==tokens.length)throw Error('Unexpected '+tokens[i]);if(!Number.isFinite(result)||canon&&Math.abs(result)>=1e100)throw Error('Math ERROR');return canon&&Math.abs(result)<1e-99?0:result
 }
-export function evaluateBaseExpression(expression,base=10){let source=String(expression).replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/\s/g,'').toUpperCase(),radix=Number(base);if(![2,8,10,16].includes(radix))throw Error('Select DEC, HEX, BIN or OCT');let tokens=source.match(/[0-9A-F]+|[()+*/-]/g)||[];if(tokens.join('')!==source||!tokens.length)throw Error('Invalid BASE expression');let pos=0,peek=()=>tokens[pos],take=()=>tokens[pos++];function atom(){let t=take();if(t==='+'||t==='-'){let n=parse(29);return t==='-'?-n:n}if(t==='('){let n=parse(0);if(take()!==')')throw Error('Missing closing parenthesis');return n}if(!t||!(/^[0-9A-F]+$/.test(t)))throw Error('Expected a base number');let digits='0123456789ABCDEF',v=0n;for(let c of t){let d=digits.indexOf(c);if(d>=radix)throw Error(`${c} is not valid in base ${radix}`);v=v*BigInt(radix)+BigInt(d)}return v}function parse(min){let left=atom();while(true){let op=peek(),bp={'+':10,'-':10,'*':20,'/':20}[op];if(bp===undefined||bp<min)break;take();let right=parse(bp+1);if(op==='+')left+=right;else if(op==='-')left-=right;else if(op==='*')left*=right;else{if(right===0n)throw Error('Division by zero');left/=right}}return left}let answer=parse(0);if(pos!==tokens.length)throw Error('Unexpected '+tokens[pos]);return answer}
+export function evaluateBaseExpression(expression,base=10){
+ const source=String(expression).replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/\s/g,''),radix=Number(base);if(![2,8,10,16].includes(radix))throw Error('Argument ERROR');
+ const tokens=source.match(/xnor|xor|and|or|Not|Neg|[dhbo](?=\()|[0-9A-F]+|[()+*/,-]/g)||[];if(tokens.join('')!==source||!tokens.length)throw Error('Syntax ERROR');let pos=0,peek=()=>tokens[pos],take=()=>tokens[pos++];
+ const checked=n=>{if(n< -2147483648n||n>2147483647n)throw Error('Math ERROR');return n;};
+ function atom(r=radix){let t=take();if(t==='+'||t==='-'){let n=parse(29,r);return t==='-'?checked(-n):n;}if(t==='('){let n=parse(0,r);if(take()!==')')throw Error('Syntax ERROR');return n;}if(['d','h','b','o','Not','Neg'].includes(t)){if(take()!=='(')throw Error('Syntax ERROR');let n=parse(0,({d:10,h:16,b:2,o:8})[t]||r);if(take()!==')')throw Error('Syntax ERROR');return t==='Not'?BigInt.asIntN(32,~n):t==='Neg'?BigInt.asIntN(32,-n):n;}
+ if(!t||!(/^[0-9A-F]+$/.test(t)))throw Error('Syntax ERROR');let v=0n;for(const c of t){let d='0123456789ABCDEF'.indexOf(c);if(d>=r)throw Error('Math ERROR');v=v*BigInt(r)+BigInt(d);}if(r!==10&&v<=4294967295n)return BigInt.asIntN(32,v);return v===2147483648n?v:checked(v);}
+ function parse(min,r=radix){let left=atom(r);while(true){let op=peek(),bp={or:3,xor:3,xnor:3,and:4,'+':10,'-':10,'*':20,'/':20}[op];if(bp===undefined||bp<min)break;take();let right=parse(bp+1,r);if(op==='+')left=checked(left+right);else if(op==='-')left=checked(left-right);else if(op==='*')left=checked(left*right);else if(op==='/'){if(right===0n)throw Error('Math ERROR');left=checked(left/right);}else left=BigInt.asIntN(32,op==='and'?left&right:op==='or'?left|right:op==='xor'?left^right:~(left^right));}return left;}
+ const answer=parse(0);if(pos!==tokens.length)throw Error('Syntax ERROR');return checked(answer);
+}
 // Complex arithmetic for the red Alpha i key. Other calculator modes keep real results.
 export function evaluateComplexExpression(expression,options={}){
   const source=String(expression).replace(/[×]/g,'*').replace(/[÷]/g,'/').replace(/[−]/g,'-').replace(/(\d|\))i\b/g,'$1*i');
   const tokens=source.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z]+|[+*/^()-]/g)||[];
   if(tokens.join('')!==source.replace(/\s/g,''))throw Error('Unsupported complex expression');
+  for(let j=tokens.length-1;j>0;j--){const a=tokens[j-1],b=tokens[j],before=/^(?:\d|\.)/.test(a)||a===')'||/^(?:i|pi|e|[A-FXYM])$/i.test(a),after=b==='('||/^(?:i|pi|e|[A-FXYM])$/i.test(b);if(before&&after)tokens.splice(j,0,'*');}
   let at=0,peek=()=>tokens[at],take=()=>tokens[at++],pair=n=>[n,0];
   const add=(a,b)=>[a[0]+b[0],a[1]+b[1]],neg=a=>[-a[0],-a[1]],mul=(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]],div=(a,b)=>{let d=b[0]**2+b[1]**2;if(!d)throw Error('Division by zero');return[(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d]};
   function atom(){let t=take();if(t==='+'||t==='-'){let v=parse(29);return t==='-'?neg(v):v}if(t==='('){let v=parse(0);if(take()!==')')throw Error('Missing closing parenthesis');return v}if(t===undefined)throw Error('Incomplete expression');if(/^(?:\d|\.)/.test(t))return pair(Number(t));let name=t.toLowerCase();if(name==='i')return[0,1];if(name==='pi')return pair(Math.PI);if(name==='e')return pair(Math.E);if(name==='ans')return pair(Number(options.ans)||0);if(name==='x')return pair(Number(options.x)||0);if(Object.hasOwn(options.variables||{},t.toUpperCase()))return pair(Number(options.variables[t.toUpperCase()]));throw Error('Unknown complex symbol: '+t)}
-  function parse(min){let left=atom();while(true){let op=peek(),bp={'+':10,'-':10,'*':20,'/':20,'^':30}[op];if(bp===undefined||bp<min)break;take();let right=parse(op==='^'?bp:bp+1);if(op==='+')left=add(left,right);else if(op==='-')left=add(left,neg(right));else if(op==='*')left=mul(left,right);else if(op==='/')left=div(left,right);else{if(right[1]!==0||!Number.isInteger(right[0])||Math.abs(right[0])>100)throw Error('Complex power requires a small integer');let base=left,left=pair(1);for(let j=0;j<Math.abs(right[0]);j++)left=mul(left,base);if(right[0]<0)left=div(pair(1),left)}}return left}
+  function parse(min){let left=atom();while(true){let op=peek(),bp={'+':10,'-':10,'*':20,'/':20,'^':30}[op];if(bp===undefined||bp<min)break;take();let right=parse(op==='^'?bp:bp+1);if(op==='+')left=add(left,right);else if(op==='-')left=add(left,neg(right));else if(op==='*')left=mul(left,right);else if(op==='/')left=div(left,right);else{if(right[1]!==0||!Number.isInteger(right[0])||Math.abs(right[0])>100)throw Error('Complex power requires a small integer');let base=left;left=pair(1);for(let j=0;j<Math.abs(right[0]);j++)left=mul(left,base);if(right[0]<0)left=div(pair(1),left)}}return left}
   if(!tokens.length)throw Error('Enter an expression');let value=parse(0);if(at!==tokens.length)throw Error('Unexpected '+tokens[at]);if(value.some(n=>!Number.isFinite(n)))throw Error('Result outside supported range');return value
 }
 export const formatted=n=>Number.isInteger(n)?String(n):String(Number(n.toPrecision(12)));
-export function fractionOf(value){if(!Number.isFinite(value))return '—';let sign=value<0?'-':'';let x=Math.abs(value),a0=Math.floor(x),h0=0,k0=1,h1=1,k1=0,h=a0,k=1;
-  while(k<100000&&Math.abs(h/k-x)>1e-10){x=1/(x-a0);if(!Number.isFinite(x))break;a0=Math.floor(x);h=a0*h1+h0;k=a0*k1+k0;h0=h1;k0=k1;h1=h;k1=k}
-  return k===1?sign+h:sign+h+'/'+k
+export function fractionOf(value){if(!Number.isFinite(value))return '—';const sign=value<0?'-':'';let x=Math.abs(value),h0=0,h1=1,k0=1,k1=0,best=[Math.floor(x),1];for(let i=0;i<32;i++){const a=Math.floor(x),h=a*h1+h0,k=a*k1+k0;if(k>1000000||!Number.isSafeInteger(h))break;best=[h,k];if(Math.abs(h/k-Math.abs(value))<=1e-12*Math.max(1,Math.abs(value)))break;const rem=x-a;if(!rem)break;x=1/rem;h0=h1;h1=h;k0=k1;k1=k;}return sign+best[0]+(best[1]===1?'':'/'+best[1]);}
+// Adaptive embedded Gauss–Kronrod 7/15 integration (manual p.52).
+export function integrate(expression,a,b,options={}){
+ if(!Number.isFinite(a)||!Number.isFinite(b))throw Error('Argument ERROR');if(a===b)return 0;if(b<a)return-integrate(expression,b,a,options);
+ const nodes=[.9914553711208126,.9491079123427585,.8648644233597691,.7415311855993945,.5860872354676911,.4058451513773972,.2077849550078985,0],wk=[.02293532201052922,.06309209262997855,.1047900103222502,.1406532597155259,.1690047266392679,.1903505780647854,.2044329400752989,.2094821410847278],wg=[.1294849661688697,.2797053914892767,.3818300505051189,.4179591836734694];
+ let calls=0;const f=x=>{if(++calls>30000)throw Error('Time Out ERROR');return evaluateExpression(expression,{...options,x});};
+ function quad(lo,hi,tol,depth){const mid=(lo+hi)/2,half=(hi-lo)/2,c=f(mid);let k=wk[7]*c,g=wg[3]*c;for(let j=0;j<7;j++){const v=f(mid-half*nodes[j])+f(mid+half*nodes[j]);k+=wk[j]*v;if(j%2===1)g+=wg[(j-1)/2]*v;}k*=half;g*=half;if(Math.abs(k-g)<=tol*Math.max(1,Math.abs(k)))return k;if(!depth)throw Error('Time Out ERROR');return quad(lo,mid,tol/2,depth-1)+quad(mid,hi,tol/2,depth-1);}
+ return quad(a,b,options.tolerance||1e-10,18);
 }
-export function integrate(expression,a,b,options={}){if(!Number.isFinite(a)||!Number.isFinite(b))throw Error('Enter finite limits');let n=1000,h=(b-a)/n,sum=evaluateExpression(expression,{...options,x:a})+evaluateExpression(expression,{...options,x:b});for(let j=1;j<n;j++)sum+=(j%2?4:2)*evaluateExpression(expression,{...options,x:a+j*h});return sum*h/3}
-export function differentiate(expression,x,options={}){let h=1e-5*Math.max(1,Math.abs(x));return(evaluateExpression(expression,{...options,x:x+h})-evaluateExpression(expression,{...options,x:x-h}))/(2*h)}
+export function differentiate(expression,x,options={}){const h=options.deltaX||Math.cbrt(Number.EPSILON)*Math.max(1,Math.abs(x));if(!Number.isFinite(x)||!Number.isFinite(h)||h<=0)throw Error('Argument ERROR');return(evaluateExpression(expression,{...options,x:x+h})-evaluateExpression(expression,{...options,x:x-h}))/(2*h);}
 export function parseMatrix(text){if(!String(text).trim())throw Error('Enter a matrix');let rows=String(text).trim().split(/[;\n]+/).map(row=>row.trim().split(/[\s,]+/).map(Number));if(!rows.length||!rows[0].length||rows.length>4||rows[0].length>4||rows.some(r=>r.length!==rows[0].length||r.some(v=>!Number.isFinite(v))))throw Error('Enter a rectangular matrix up to 4×4. Separate rows with semicolons.');return rows}
 export const transpose=A=>A[0].map((_,j)=>A.map(row=>row[j]));
 export function multiplyMatrices(A,B){if(A[0].length!==B.length)throw Error('Columns of A must equal rows of B');return A.map(row=>B[0].map((_,j)=>row.reduce((sum,v,k)=>sum+v*B[k][j],0)))}
