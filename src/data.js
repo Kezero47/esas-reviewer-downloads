@@ -16,6 +16,8 @@ export function splitLawsSubject(question){
 export const questionBank = [...importedQuestions,...economicsQuestions].map(correctAnswer).map(splitLawsSubject);
 export const playableQuestions = questionBank.filter(q=>q.quality==='ready');
 let publishedQuestionIds=new Set();
+let publishedRows=[];
+let resourceQuestions=null;
 export const subjects = [
   { id:'chemistry', name:'Chemistry/Engineering Materials', icon:'⚗', color:'amber', topics:['Chemistry and materials'] },
   { id:'fluids', name:'Fluid Mechanics', icon:'◉', color:'cyan', topics:['Fluid Statics','Fluid Dynamics','Fluid mechanics terminology','Fluid Mechanics','Fluid Mechanics — Statics & Dynamics'] },
@@ -34,10 +36,11 @@ export const subjects = [
 ];
 
 export function setPublishedQuestions(items=[]){
+  publishedRows=Array.isArray(items)?items:[];
   for(let index=questionBank.length-1;index>=0;index--){
     if(publishedQuestionIds.has(questionBank[index].id))questionBank.splice(index,1);
   }
-  const embeddedIds=new Set([...importedQuestions,...economicsQuestions].map(question=>question.id));
+  const embeddedIds=new Set((resourceQuestions||[...importedQuestions,...economicsQuestions]).map(question=>question.id));
   const seen=new Set();
   const accepted=[];
   for(const question of Array.isArray(items)?items:[]){
@@ -93,3 +96,15 @@ export const sourceRegistry = [
 export const initialSubmissions = [
   {id:'sample-1', title:'Sample resource submission', category:'Reviewer', submittedBy:'Demo learner', status:'Pending', detail:'Demonstrates the review and approval interface. No source content is published.'}
 ];
+
+// The validated catalog is a complete public snapshot. Preserve array identities
+// consumed by the UI, then reapply device-local publications as their own layer.
+export function setResourceCatalog(catalog){
+  resourceQuestions=catalog.questions.map(splitLawsSubject);
+  const local=publishedRows;
+  questionBank.splice(0,questionBank.length,...resourceQuestions);
+  sourceRegistry.splice(0,sourceRegistry.length,...catalog.sources.map(s=>({...s,subjectIds:[...s.subjectIds]})));
+  publishedQuestionIds=new Set();
+  setPublishedQuestions(local);
+  return questionBank.length;
+}

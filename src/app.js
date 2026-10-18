@@ -12,7 +12,8 @@ import {quizId,migrateQuizLibrary,saveLibrarySession,wrongAnswerIds,createWrongA
 import {EXAM_PRICE,EXAM_PRODUCT,DOCX_MIME,createExamDocx,examQuestions,sourceQuestionFolders} from './printable-exam.js';
 import {paymentReviewState,pendingManualPayments,newPendingPayments} from './subscription-ui.js';
 import {paymentPanel,facebookActivationPanel} from './payment-panel.js';
-import {subjects,questionBank,playableQuestions,sourceRegistry,initialSubmissions,setPublishedQuestions} from './data.js';
+import {subjects,questionBank,playableQuestions,sourceRegistry,initialSubmissions,setPublishedQuestions,setResourceCatalog} from './data.js';
+import {createResourceCatalogClient,deferredResourceCatalog} from './resource-catalog.js';
 import {calculatorView,initCalculator,calculatorSnapshot,restoreCalculator,pressCalculatorKey,calculatorControl,runCalculatorOperation,clearCalculatorData,calculatorTouch,calculatorChooseEquation,calculatorSelectMode} from './calculator-ui.js';
 import {evaluateExpression,formatted} from './calc-engine.js';
 import {createQuizSelection,displayedAnswerLetter,filterQuizQuestions,normalizeSelectedSources,normalizeSelectedSubjects,practiceChoiceState,reconcileSelectedSources,scoreQuiz,sourceIdsForSubjects} from './quiz-engine.js';
@@ -22,7 +23,7 @@ import {signOutMode} from './auth-flow.js';
 import {accessLabel,accessibleQuestions,filterUsers,hasFullAccess,hasPremiumAccess} from './access-policy.js';
 
 const root=document.querySelector('#app');
-const publicConfig=window.ESAS_PUBLIC_CONFIG||{apkDownloadUrl:'./downloads/ESAS-Reviewer-v2.6.1.apk',apkVersion:'Version 2.6.1',minimumAndroid:'Android 8.0 or newer'};
+const publicConfig=window.ESAS_PUBLIC_CONFIG||{apkDownloadUrl:'./downloads/ESAS-Reviewer-v2.7.0.apk',apkVersion:'Version 2.7.0',minimumAndroid:'Android 8.0 or newer'};
 const get=(key,fallback)=>{try{const x=localStorage.getItem('esas.'+key);return x?JSON.parse(x):fallback}catch{return fallback}};
 const put=(key,value)=>{try{localStorage.setItem('esas.'+key,JSON.stringify(value))}catch{}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -31,8 +32,8 @@ restoreCalculator(state,get('calcDevice',{}));
 state.quizLibrary=migrateQuizLibrary(get('quizLibrary',[]),state.session,state.lastResult);put('quizLibrary',state.quizLibrary);if(state.session?.mode!=='ranked'&&state.session?.ids){const entry=state.quizLibrary.find(x=>JSON.stringify(x.session.ids)===JSON.stringify(state.session.ids)&&x.status!=='Completed');if(entry)state.session.libraryId=entry.id;}state.sourceExpanded=get('sourceExpanded',{});state.sourceOrganization=get('sourceOrganization',[]);state.lastRenderedPage=null;
 state.sourceDetailsId='';state.reviewSource='';state.printableExamUnlocked=false;
 state.premiumUntil=0;state.trialUntil=0;state.accessSource='Free';state.paymentFeedInitialized=false;
-state.config={...state.config,latestVersionCode:Math.max(16,Number(state.config.latestVersionCode)||0),latestVersionName:'2.6.1',updateUrl:publicConfig.apkDownloadUrl,currentVersionCode:16,currentVersionName:'2.6.1'};
-state.updateStatus={checking:!!window.NativeBridge,available:false,currentVersionCode:16,currentVersionName:'2.6.1',latestVersionCode:16,latestVersionName:'2.6.1'};
+state.config={...state.config,latestVersionCode:Math.max(17,Number(state.config.latestVersionCode)||0),latestVersionName:'2.7.0',updateUrl:publicConfig.apkDownloadUrl,currentVersionCode:17,currentVersionName:'2.7.0'};
+state.updateStatus={checking:!!window.NativeBridge,available:false,currentVersionCode:17,currentVersionName:'2.7.0',latestVersionCode:17,latestVersionName:'2.7.0'};
 const rankSubjectIds=[...new Set(playableQuestions.map(question=>question.subject))];
 state.rankProgress=migrateRankProgress(get('rankProgress',{}),rankSubjectIds);
 state.rankSessions=get('rankSessions',{});
@@ -55,7 +56,7 @@ window.esasNative={auth(result){const x=JSON.parse(result);if(x.error){showNotic
 Object.assign(window.esasNative,{entitlement(result){const x=JSON.parse(result);state.premiumUntil=Number(x.premiumUntil||0);state.printableExamUnlocked=x.printableExamUnlocked===true;state.accessUntil=Number(x.accessUntil||0);state.trialUntil=Number(x.trialUntil||0);state.accessSource=x.source||'Free';configureOffline();render()},config(result){const x=JSON.parse(result);if(Array.isArray(x.sourceOrganization)){state.sourceOrganization=x.sourceOrganization;put('sourceOrganization',state.sourceOrganization);}state.config={...state.config,...x};if(Number(state.config.latestVersionCode||0)<2){state.config.latestVersionCode=2;state.config.latestVersionName='1.0.1';state.config.updateUrl='https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v1.0/ESAS-Reviewer.apk'}state.supportEnabled=x.gcashEnabled!==false;render()},profileDetails(result){const x=JSON.parse(result);state.profileDetails={...state.profileDetails,...x};if(x.name)state.profile.name=x.name;put('profileDetails',state.profileDetails);put('profile',state.profile);render()},leaderboard(result){state.leaderboard=JSON.parse(result).items||[];render()},users(result){state.users=JSON.parse(result).items||[];render()},payments(result){const items=JSON.parse(result).items||[];const fresh=state.paymentFeedInitialized?newPendingPayments(state.payments,items):[];state.payments=items;state.paymentFeedInitialized=true;if(ownerEligible()&&fresh.length&&(!state.overlay||state.overlay==='notice'))showNotice(`${fresh.length} new payment submission${fresh.length===1?'':'s'}. Open Payments to verify the transfer and approve the purchased product after the 12-hour waiting period.`,'Payment submitted');else render()},messages(result){state.messages=JSON.parse(result).items||[];render()},activationCodes(result){state.activationCodes=JSON.parse(result).items||[];render()},resourcePicked(result){state.pickedResourceName=JSON.parse(result).fileName||'';render()},updateAvailable(result){state.updateInfo=JSON.parse(result);render()},operation(result){const x=JSON.parse(result);showNotice(x.message||x.error||'Done',x.error?'Could not complete':'Completed');if(window.NativeBridge&&!x.error){NativeBridge.loadAccountData();NativeBridge.loadSubmissions()}}});
 Object.assign(window.esasNative,{
   qrphCheckout(result){const x=JSON.parse(result);state.qrphBusy=false;if(x.error)showNotice(x.error,'QR Ph payment');else render()},
-  config(result){const x=JSON.parse(result);if(Array.isArray(x.sourceOrganization)){state.sourceOrganization=x.sourceOrganization;put('sourceOrganization',state.sourceOrganization);}state.config={...state.config,...x};if(Number(state.config.latestVersionCode||0)<9){state.config.latestVersionCode=9;state.config.latestVersionName='2.6.1';state.config.updateUrl=publicConfig.apkDownloadUrl}state.supportEnabled=x.gcashEnabled!==false;render()},
+  config(result){const x=JSON.parse(result);if(Array.isArray(x.sourceOrganization)){state.sourceOrganization=x.sourceOrganization;put('sourceOrganization',state.sourceOrganization);}state.config={...state.config,...x};if(Number(state.config.latestVersionCode||0)<9){state.config.latestVersionCode=9;state.config.latestVersionName='2.7.0';state.config.updateUrl=publicConfig.apkDownloadUrl}state.supportEnabled=x.gcashEnabled!==false;render()},
   updateStatus(result){const x=JSON.parse(result);state.updateStatus={...state.updateStatus,...x};if(x.available){state.updateInfo={versionCode:x.latestVersionCode,versionName:x.latestVersionName,releaseNotes:x.releaseNotes,updateUrl:x.updateUrl}}render()},
   updateAvailable(result){const x=JSON.parse(result);state.updateInfo=x;state.updateStatus={...state.updateStatus,checking:false,available:true,latestVersionCode:x.versionCode,latestVersionName:x.versionName,releaseNotes:x.releaseNotes,updateUrl:x.updateUrl};render()}
 });
@@ -537,7 +538,7 @@ document.addEventListener('click',event=>{if(state.page==='active-quiz'&&quizExp
 function notificationPage(){const rows=readNotifications(localStorage,state.nativeUid);return `${title('Notifications','YOUR UPDATES','more')}<p class="small muted">Tournament starts, new study sources, app updates and access activations. Updates appear while connected or when you reopen the app.</p><button class="btn secondary" data-notifications-read>Mark all as read</button><div class="notification-list">${rows.map(n=>`<button class="action-row ${n.read?'':'notification-unread'}" data-notification-id="${esc(n.id)}"><span class="grow"><strong>${esc(n.title)}</strong><small>${esc(n.body)}</small><small>${esc(new Date(n.createdAt).toLocaleString())}</small></span><span>›</span></button>`).join('')||'<div class="glass pad">You’re all caught up.</div>'}</div>`;}
 function notifyApp(event){try{return addNotification(localStorage,state.nativeUid,event);}catch{return false;}}
 const authBeforeNotifications=window.esasNative.auth;
-window.esasNative.auth=function(raw){authBeforeNotifications(raw);if(!state.nativeUid)return;notifyApp({id:'release:2.6.1',title:'Tournament connection fixed',body:'Tournament service is connected again. Background connection problems no longer interrupt your screen.',target:'tournaments'});render();};
+window.esasNative.auth=function(raw){authBeforeNotifications(raw);if(!state.nativeUid)return;notifyApp({id:'release:2.7.0',title:'New exam sources available',body:'Exams 18 and 20 are in Past Exam(Answer key by AI) / 2026. Resources refresh automatically.',target:'sources'});render();};
 const entitlementBeforeNotifications=window.esasNative.entitlement;
 window.esasNative.entitlement=function(raw){const current=JSON.parse(raw),key='activationSeen.'+state.nativeUid,previous=get(key,{}),event=activationEvent(current,previous);if(event)notifyApp(event);if(state.nativeUid)put(key,{paid:Number(current.paidUntil??current.accessUntil)||0,premium:Number(current.premiumUntil)||0});entitlementBeforeNotifications(raw);};
 const tournamentBeforeNotifications=window.esasNative.tournament;
@@ -554,3 +555,21 @@ document.addEventListener('input',event=>{if(!event.target.hasAttribute('data-ca
 document.addEventListener('keydown',event=>{if(event.target.hasAttribute('data-calculator-expression')&&event.key==='Enter'){event.preventDefault();calc('=');}});
 
 setInterval(()=>{if(document.querySelector('.canon-face')&&state.calcPower!==false&&Date.now()-(state.calcLastInteraction||Date.now())>=420000){state.calcPower=false;state.calcHistory=[];render();}},10000).unref?.();
+
+// Refresh published resources without navigating away or changing a live exam.
+const catalogUpdates=deferredResourceCatalog(catalog=>{
+  const previousSources=new Set(sourceRegistry.map(s=>s.id));
+  setResourceCatalog(catalog);
+  state.quizSetup.subjects=normalizeSelectedSubjects(state.quizSetup.subjects,[...new Set(playableQuestions.map(q=>q.subject))]);
+  const allowed=sourceIdsForSubjects(playableQuestions,state.quizSetup.subjects);
+  state.quizSetup.sources=normalizeSelectedSources([...state.quizSetup.sources,...allowed.filter(id=>!previousSources.has(id))],allowed);
+  render();
+},()=>['active-quiz','tournament-active','results','printable-exam','content-edit','source-organizer'].includes(state.page));
+const catalogClient=createResourceCatalogClient({onCatalog:catalog=>catalogUpdates.receive(catalog)});
+const refreshResources=()=>catalogClient.refresh().catch(()=>{});
+if(window.location&&typeof fetch==='function')refreshResources();
+window.addEventListener?.('online',()=>{catalogUpdates.flush();refreshResources();});
+window.addEventListener?.('esas-resume',()=>{catalogUpdates.flush();refreshResources();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){catalogUpdates.flush();refreshResources();}});
+const goBeforeResourceRefresh=go;
+go=function(page){goBeforeResourceRefresh(page);catalogUpdates.flush();};

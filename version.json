@@ -1,6 +1,6 @@
 {
-  "versionCode": 16,
-  "versionName": "2.6.1",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.6.1/ESAS-Reviewer-v2.6.1.apk",
-  "releaseNotes": "Restores the tournament server connection and stops repeated background connection popups. Preserves the new calculator."
+  "versionCode": 17,
+  "versionName": "2.7.0",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.7.0/ESAS-Reviewer-v2.7.0.apk",
+  "releaseNotes": "Adds AI-key Exams 18 and 20, keeps the current screen when rotating, and refreshes published resources without future APK updates."
 }
