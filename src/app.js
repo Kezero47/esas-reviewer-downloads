@@ -1,3 +1,5 @@
+import {examBuilderView} from './exam-builder-ui.js';
+import {normalizeExamPath,examFolderPath,examParentPath,sameExamPath,readExamFolders,saveExamFolders,addExamFolder,nextExamSet,selectManualExamQuestions,createSiblingExam} from './exam-workspace.js';
 import {readNotifications,addNotification,activationEvent} from './app-notifications.js';
 import {questionMediaHtml} from './question-media.js';
 import {TIMED_PRESETS,quizDurationMs,quizRemainingMs,quizExpired,countdown} from './quiz-timer.js';
@@ -23,7 +25,7 @@ import {signOutMode} from './auth-flow.js';
 import {accessLabel,accessibleQuestions,filterUsers,hasFullAccess,hasPremiumAccess} from './access-policy.js';
 
 const root=document.querySelector('#app');
-const publicConfig=window.ESAS_PUBLIC_CONFIG||{apkDownloadUrl:'./downloads/ESAS-Reviewer-v2.7.0.apk',apkVersion:'Version 2.7.0',minimumAndroid:'Android 8.0 or newer'};
+const publicConfig=window.ESAS_PUBLIC_CONFIG||{apkDownloadUrl:'./downloads/ESAS-Reviewer-v2.8.0.apk',apkVersion:'Version 2.8.0',minimumAndroid:'Android 8.0 or newer'};
 const get=(key,fallback)=>{try{const x=localStorage.getItem('esas.'+key);return x?JSON.parse(x):fallback}catch{return fallback}};
 const put=(key,value)=>{try{localStorage.setItem('esas.'+key,JSON.stringify(value))}catch{}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -32,8 +34,8 @@ restoreCalculator(state,get('calcDevice',{}));
 state.quizLibrary=migrateQuizLibrary(get('quizLibrary',[]),state.session,state.lastResult);put('quizLibrary',state.quizLibrary);if(state.session?.mode!=='ranked'&&state.session?.ids){const entry=state.quizLibrary.find(x=>JSON.stringify(x.session.ids)===JSON.stringify(state.session.ids)&&x.status!=='Completed');if(entry)state.session.libraryId=entry.id;}state.sourceExpanded=get('sourceExpanded',{});state.sourceOrganization=get('sourceOrganization',[]);state.lastRenderedPage=null;
 state.sourceDetailsId='';state.reviewSource='';state.printableExamUnlocked=false;
 state.premiumUntil=0;state.trialUntil=0;state.accessSource='Free';state.paymentFeedInitialized=false;
-state.config={...state.config,latestVersionCode:Math.max(17,Number(state.config.latestVersionCode)||0),latestVersionName:'2.7.0',updateUrl:publicConfig.apkDownloadUrl,currentVersionCode:17,currentVersionName:'2.7.0'};
-state.updateStatus={checking:!!window.NativeBridge,available:false,currentVersionCode:17,currentVersionName:'2.7.0',latestVersionCode:17,latestVersionName:'2.7.0'};
+state.config={...state.config,latestVersionCode:Math.max(18,Number(state.config.latestVersionCode)||0),latestVersionName:'2.8.0',updateUrl:publicConfig.apkDownloadUrl,currentVersionCode:18,currentVersionName:'2.8.0'};
+state.updateStatus={checking:!!window.NativeBridge,available:false,currentVersionCode:18,currentVersionName:'2.8.0',latestVersionCode:18,latestVersionName:'2.8.0'};
 const rankSubjectIds=[...new Set(playableQuestions.map(question=>question.subject))];
 state.rankProgress=migrateRankProgress(get('rankProgress',{}),rankSubjectIds);
 state.rankSessions=get('rankSessions',{});
@@ -56,7 +58,7 @@ window.esasNative={auth(result){const x=JSON.parse(result);if(x.error){showNotic
 Object.assign(window.esasNative,{entitlement(result){const x=JSON.parse(result);state.premiumUntil=Number(x.premiumUntil||0);state.printableExamUnlocked=x.printableExamUnlocked===true;state.accessUntil=Number(x.accessUntil||0);state.trialUntil=Number(x.trialUntil||0);state.accessSource=x.source||'Free';configureOffline();render()},config(result){const x=JSON.parse(result);if(Array.isArray(x.sourceOrganization)){state.sourceOrganization=x.sourceOrganization;put('sourceOrganization',state.sourceOrganization);}state.config={...state.config,...x};if(Number(state.config.latestVersionCode||0)<2){state.config.latestVersionCode=2;state.config.latestVersionName='1.0.1';state.config.updateUrl='https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v1.0/ESAS-Reviewer.apk'}state.supportEnabled=x.gcashEnabled!==false;render()},profileDetails(result){const x=JSON.parse(result);state.profileDetails={...state.profileDetails,...x};if(x.name)state.profile.name=x.name;put('profileDetails',state.profileDetails);put('profile',state.profile);render()},leaderboard(result){state.leaderboard=JSON.parse(result).items||[];render()},users(result){state.users=JSON.parse(result).items||[];render()},payments(result){const items=JSON.parse(result).items||[];const fresh=state.paymentFeedInitialized?newPendingPayments(state.payments,items):[];state.payments=items;state.paymentFeedInitialized=true;if(ownerEligible()&&fresh.length&&(!state.overlay||state.overlay==='notice'))showNotice(`${fresh.length} new payment submission${fresh.length===1?'':'s'}. Open Payments to verify the transfer and approve the purchased product after the 12-hour waiting period.`,'Payment submitted');else render()},messages(result){state.messages=JSON.parse(result).items||[];render()},activationCodes(result){state.activationCodes=JSON.parse(result).items||[];render()},resourcePicked(result){state.pickedResourceName=JSON.parse(result).fileName||'';render()},updateAvailable(result){state.updateInfo=JSON.parse(result);render()},operation(result){const x=JSON.parse(result);showNotice(x.message||x.error||'Done',x.error?'Could not complete':'Completed');if(window.NativeBridge&&!x.error){NativeBridge.loadAccountData();NativeBridge.loadSubmissions()}}});
 Object.assign(window.esasNative,{
   qrphCheckout(result){const x=JSON.parse(result);state.qrphBusy=false;if(x.error)showNotice(x.error,'QR Ph payment');else render()},
-  config(result){const x=JSON.parse(result);if(Array.isArray(x.sourceOrganization)){state.sourceOrganization=x.sourceOrganization;put('sourceOrganization',state.sourceOrganization);}state.config={...state.config,...x};if(Number(state.config.latestVersionCode||0)<9){state.config.latestVersionCode=9;state.config.latestVersionName='2.7.0';state.config.updateUrl=publicConfig.apkDownloadUrl}state.supportEnabled=x.gcashEnabled!==false;render()},
+  config(result){const x=JSON.parse(result);if(Array.isArray(x.sourceOrganization)){state.sourceOrganization=x.sourceOrganization;put('sourceOrganization',state.sourceOrganization);}state.config={...state.config,...x};if(Number(state.config.latestVersionCode||0)<18){state.config.latestVersionCode=18;state.config.latestVersionName='2.8.0';state.config.updateUrl=publicConfig.apkDownloadUrl}state.supportEnabled=x.gcashEnabled!==false;render()},
   updateStatus(result){const x=JSON.parse(result);state.updateStatus={...state.updateStatus,...x};if(x.available){state.updateInfo={versionCode:x.latestVersionCode,versionName:x.latestVersionName,releaseNotes:x.releaseNotes,updateUrl:x.updateUrl}}render()},
   updateAvailable(result){const x=JSON.parse(result);state.updateInfo=x;state.updateStatus={...state.updateStatus,checking:false,available:true,latestVersionCode:x.versionCode,latestVersionName:x.versionName,releaseNotes:x.releaseNotes,updateUrl:x.updateUrl};render()}
 });
@@ -307,11 +309,17 @@ render=function(){
   const focusedSource=document.activeElement?.dataset?.quizSource;
   const chat=document.querySelector('.chat-history'),chatTop=chat?.scrollTop||0,chatNearEnd=!chat||chat.scrollHeight-chat.scrollTop-chat.clientHeight<70;
   const composer=document.querySelector('.chat-composer textarea'),focusedChat=!!composer&&document.activeElement===composer,selection=focusedChat?[composer.selectionStart,composer.selectionEnd]:null;
+  const focusedExamQuestion=document.activeElement?.dataset?.examSelect;
+  const examPickerScroll=state.examPickerReset?0:(document.querySelector('.exam-question-list')?.scrollTop||0);state.examPickerReset=false;
+  const examOpenDetails=[...(document.querySelectorAll?.('#exam-form details[data-exam-section][open]')||[])].map(el=>el.dataset.examSection);
   const examForm=samePage&&state.page==='printable-exam'?document.querySelector('#exam-form'):null,examValues=examForm?new FormData(examForm):null;
   if(examValues){state.examDraft=[...examValues.entries()];state.examDraftUid=state.nativeUid;}
   renderBeforeMessenger();state.lastRenderedPage=state.page;
   const restoreExam=examValues||(state.page==='printable-exam'&&state.examDraftUid===state.nativeUid&&state.examDraft?new URLSearchParams(state.examDraft):null);
   if(restoreExam){const form=document.querySelector('#exam-form');for(const input of form?.elements||[]){if(!input.name)continue;if(input.type==='checkbox'||input.type==='radio')input.checked=restoreExam.getAll(input.name).includes(input.value);else if(restoreExam.has(input.name))input.value=restoreExam.get(input.name);}}
+  if(samePage){const list=document.querySelector('.exam-question-list');if(list)list.scrollTop=examPickerScroll;}
+  if(samePage&&focusedExamQuestion)[...(document.querySelectorAll?.('[data-exam-select]')||[])].find(input=>input.dataset.examSelect===focusedExamQuestion)?.focus({preventScroll:true});
+  if(samePage)for(const section of examOpenDetails){const detail=document.querySelector(`[data-exam-section="${section}"]`);if(detail)detail.open=true;}
   if(samePage){if(focusedSource)document.querySelector(`[data-quiz-source="${focusedSource}"]`)?.focus({preventScroll:true});window.scrollTo(0,scrollY);}
   const history=document.querySelector('.chat-history');if(history)requestAnimationFrame(()=>{history.scrollTop=samePage&&!chatNearEnd?chatTop:history.scrollHeight;});
   if(focusedChat&&samePage){const next=document.querySelector('.chat-composer textarea');next?.focus({preventScroll:true});if(selection)next?.setSelectionRange(...selection);}
@@ -371,15 +379,20 @@ function exportSavedExam(exam){
  else{const url=URL.createObjectURL(new Blob([bytes],{type:DOCX_MIME})),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
  }catch(error){showNotice(error.message,'Exam export');}
 }
-function printableExam(){
-  const library=savedExams(),preview=library.find(x=>x.id===state.examPreviewId);
-  if(preview&&(premiumAccess()||state.printableExamUnlocked))return `${title('Exam documents','YOUR PRINTABLE LIBRARY','home')}${examPreviewView(preview,!!state.examPreviewFull)}`;
-  const unlocked=premiumAccess()||state.printableExamUnlocked;
-  const pool=examQuestions(questionBank),ids=new Set(pool.map(q=>q.sourceId));
-  const pending=state.payments.some(p=>p.product===EXAM_PRODUCT&&p.status==='Pending');
-  return `${title('Create a printable exam','PREMIUM EXAMS','home')}<div class="glass pad"><h2>Ready to print</h2><p>Single-column or two-column Word exam, with a separate answer key at the end.</p><p class="small muted">Included in Premium · ₱199 for 30 days. Customize the header, subjects and sources. Existing printable purchases remain valid.</p></div>${!unlocked?`<div class="glass pad"><h3>Printable exams are included in Premium</h3><button class="btn wide" data-go="support">Choose Premium · ₱199</button></div>`:''}
-  ${examLibraryView(library)}<div class="section-head"><h2>Create exam sets</h2></div><form id="exam-form" class="glass pad"><label class="field">Exam title<input name="title" value="ESAS PRACTICE EXAM" required maxlength="160"></label><label class="field">School / institution<input name="institution" maxlength="160" placeholder="School name (optional)"></label><label class="field">Department<input name="department" maxlength="160" placeholder="College / department (optional)"></label><label class="field">Course<input name="course" maxlength="160" placeholder="Course name (optional)"></label><label class="field">Set<input name="set" maxlength="30" placeholder="A / B (optional)"></label><fieldset class="subject-picker"><legend>Subjects</legend>${subjects.filter(s=>pool.some(q=>q.subject===s.id)).map(s=>`<label class="switch-row"><span>${esc(s.name)}</span><input type="checkbox" name="subjects" value="${esc(s.id)}" checked></label>`).join('')}</fieldset><fieldset class="subject-picker"><legend>Sources</legend>${sourceTreeMarkup(sourceRegistry.filter(s=>ids.has(s.id)),s=>`<label class="switch-row"><span>${esc(s.title)}</span><input type="checkbox" name="sources" value="${esc(s.id)}" checked></label>`)}</fieldset><fieldset class="subject-picker"><legend>Question type</legend><div class="row">${['All','Terminology','Solving'].map(type=>`<label class="pill"><input type="radio" name="type" value="${type}" ${type==='All'?'checked':''}> ${type}</label>`).join('')}</div></fieldset><label class="field">Number of questions<input name="count" type="number" min="1" max="${pool.length}" value="80" required></label><fieldset class="subject-picker"><legend>Page layout</legend><div class="exam-layout-options"><label><input type="radio" name="columns" value="1"><span><b>▤ One column</b><small>More space for each question</small></span></label><label><input type="radio" name="columns" value="2" checked><span><b>▥ Two columns</b><small>Compact exam format</small></span></label></div></fieldset><div class="exam-set-options"><label class="field">Number of sets<input type="number" name="setCount" value="1" min="1" max="20" required></label><fieldset class="subject-picker exam-choice-group"><legend>Set mode</legend><label><input type="radio" name="setMode" value="different" checked><span>Different questions — no shared items</span></label><label><input type="radio" name="setMode" value="shuffle"><span>Same questions — shuffled order</span></label></fieldset></div><label class="switch-row"><span>Exclude questions in my saved exams (different-question mode)</span><input type="checkbox" name="excludeSaved" checked></label><fieldset class="subject-picker"><legend>Answer-key distribution</legend><div class="exam-choice-group"><label><input type="radio" name="answerLayout" value="original" checked><span>Keep source order; pin aggregate choices to D</span></label><label><input type="radio" name="answerLayout" value="balanced"><span>Balance A / B / C / D automatically</span></label><label><input type="radio" name="answerLayout" value="custom"><span>Custom counts for each set</span></label></div><div class="answer-counts">${['A','B','C','D'].map(letter=>`<label class="field">${letter}<input type="number" name="answer${letter}" min="0" step="1" value="20" aria-label="Correct answers in ${letter}"></label>`).join('')}</div><p class="footnote">Custom counts must total the number of questions in each set. All/none-of-the-above choices always stay in D. Automatic balance adjusts for these fixed positions.</p></fieldset><label class="switch-row"><span>Randomize question order</span><input type="checkbox" name="random" checked></label><p class="footnote">Only questions with verified answer keys are included. Correct answer keys follow any reordered choices. Sets are saved on this device for preview and download. The document uses the sample’s 8.5 × 12.85 inch paper size.</p><button class="btn wide" ${unlocked?'':'disabled'}>Create Word exam (.docx)</button></form>`;
+function examWorkspace(){
+ if(state.examWorkspace?.uid!==state.nativeUid)state.examWorkspace={uid:state.nativeUid,path:[],creatingFolder:false,manual:{selected:[],search:'',page:0,selectedOnly:false,open:false}};
+ return state.examWorkspace;
 }
+function stashExamDraft(){const form=document.querySelector('#exam-form');if(form){state.examDraft=[...new FormData(form).entries()];state.examDraftUid=state.nativeUid;}}
+function printableExam(){
+ const workspace=examWorkspace(),library=savedExams(),preview=library.find(x=>x.id===state.examPreviewId);
+ if(preview&&(premiumAccess()||state.printableExamUnlocked))return `${title('Exam documents','YOUR PRINTABLE LIBRARY','home')}${examPreviewView(preview,!!state.examPreviewFull)}`;
+ const unlocked=premiumAccess()||state.printableExamUnlocked,pool=examQuestions(questionBank),ids=new Set(pool.map(q=>q.sourceId));
+ const draft=state.examDraftUid===state.nativeUid&&state.examDraft?new URLSearchParams(state.examDraft):null;
+ let folders=[],folderError='';try{folders=readExamFolders(localStorage,state.nativeUid);}catch(error){folderError=`<p role="alert" class="glass pad">${esc(error.message)} Your saved documents have not been changed.</p>`;}
+ return `${title('Printable exams','YOUR EXAM WORKSPACE','home')}<div class="glass pad exam-intro"><h2>Build an exam, your way</h2><p>Pick questions yourself or select automatically. Keep each exam and its sets in folders, then download a Word document with a separate answer key.</p><p class="small muted">Included in Premium · ₱199 for 30 days. Existing printable purchases remain valid.</p></div>${!unlocked?`<div class="glass pad"><h3>Printable exams are included in Premium</h3><button class="btn wide" data-go="support">Choose Premium · ₱199</button></div>`:''}${folderError}${examLibraryView(library,{folders,path:workspace.path,creatingFolder:workspace.creatingFolder})}${examBuilderView({bank:pool,registry:sourceRegistry.filter(s=>ids.has(s.id)),subjects,sourceMarkup:sourceTreeMarkup(sourceRegistry.filter(s=>ids.has(s.id)),s=>`<label class="switch-row"><span>${esc(s.title)}</span><input type="checkbox" name="sources" value="${esc(s.id)}" checked></label>`),draft,manual:workspace.manual,unlocked,parent:workspace.path})}`;
+}
+
 document.addEventListener('click',event=>{
   const target=event.target.closest('[data-review-source]');if(!target)return;
   event.preventDefault();event.stopImmediatePropagation();state.reviewSource=target.dataset.reviewSource;state.reviewTopic='All';state.reviewIndex=0;state.reviewReveal=false;go('question-library');
@@ -394,16 +407,22 @@ document.addEventListener('submit',event=>{
   if(!premiumAccess()&&!state.printableExamUnlocked){showNotice('Unlock printable exams before exporting.');return;}
   const selectedSubjects=data.getAll('subjects'),selectedSources=data.getAll('sources');
   if(!selectedSubjects.length||!selectedSources.length){showNotice('Select at least one subject and one source.');return;}
-  const pool=examQuestions(questionBank,{subjects:selectedSubjects,sources:selectedSources,type:data.get('type')});
-  const count=Number(data.get('count'));
-  if(!Number.isInteger(count)||count<1||count>pool.length){showNotice(`These filters have ${pool.length} verified questions. Enter a count from 1 to ${pool.length}.`);return;}
+  const filters={subjects:selectedSubjects,sources:selectedSources,type:data.get('type')},count=Number(data.get('count')),setCount=Number(data.get('setCount'));
+  if(!Number.isInteger(count)||count<1){showNotice('Enter a positive whole number of questions.');return;}
   try{
-    const previous=readExamLibrary(localStorage,state.nativeUid),used=new Set(previous.flatMap(x=>x.questions.map(examItemKey)));
-    const candidates=data.get('setMode')==='different'&&data.get('excludeSaved')?pool.filter(q=>!used.has(examItemKey(q))):pool;
+    const previous=readExamLibrary(localStorage,state.nativeUid),parent=normalizeExamPath(data.get('folder'));
+    if(!parent.length)throw Error('Enter an exam folder.');
+    if(parent.length>=6)throw Error('Use at most five folder levels here to leave room for the set subfolder.');
+    const pool=examQuestions(questionBank,filters),manual=data.get('selectionMode')==='manual';
+    const used=new Set(previous.filter(x=>sameExamPath(examParentPath(x),parent)).flatMap(x=>x.questions.map(examItemKey)));
+    const candidates=manual?selectManualExamQuestions(questionBank,examWorkspace().manual.selected,{count,setCount,mode:data.get('setMode')}):data.get('setMode')==='different'&&data.get('excludeSaved')?pool.filter(q=>!used.has(examItemKey(q))):pool;
     const options=Object.fromEntries(['title','institution','department','course','set','columns'].map(k=>[k,data.get(k)]));
-    const sets=createExamSets(candidates,{count,setCount:Number(data.get('setCount')),mode:data.get('setMode'),randomize:!!data.get('random'),options,distribution:{mode:data.get('answerLayout'),counts:['A','B','C','D'].map(k=>Number(data.get('answer'+k)))}});
-    storeExams([...sets,...previous]);state.examPreviewId=sets[0].id;render();
+    if(setCount>1&&options.set==='A')options.set='';
+    const sets=createExamSets(candidates,{count,setCount,mode:data.get('setMode'),randomize:!!data.get('random'),options,distribution:{mode:data.get('answerLayout'),counts:['A','B','C','D'].map(k=>Number(data.get('answer'+k)))}}).map(exam=>({...exam,folderPath:[...parent,`Set ${exam.options.set}`],filters,selectionMode:manual?'manual':'automatic'}));
+    for(const exam of sets)normalizeExamPath(exam.folderPath);
+    storeExams([...sets,...previous]);examWorkspace().path=sets[0].folderPath;state.examPreviewId=sets[0].id;render();
   }catch(error){showNotice(error.message,'Exam documents');}
+
 },true);
 
 function sourceTreeMarkup(sources, leaf, selectable=false){
@@ -495,14 +514,21 @@ document.addEventListener('click',event=>{const t=event.target.closest('[data-ca
 document.addEventListener('change',event=>{if(event.target.dataset.calcField==='ohmSolve'){state.calcInputs.ohmSolve=event.target.value;state.calcToolResult='';render();}});
 
 document.addEventListener('click',event=>{
- const t=event.target.closest('[data-exam-open],[data-exam-close],[data-exam-export],[data-exam-shuffle],[data-exam-remove],[data-exam-view]');if(!t)return;event.preventDefault();event.stopImmediatePropagation();
+ const t=event.target.closest('[data-exam-open],[data-exam-close],[data-exam-export],[data-exam-shuffle],[data-exam-unused],[data-exam-reselect],[data-exam-remove],[data-exam-view]');if(!t)return;event.preventDefault();event.stopImmediatePropagation();
  if(t.hasAttribute('data-exam-view')){state.examPreviewFull=!state.examPreviewFull;render();return;}if(t.hasAttribute('data-exam-close')){state.examPreviewId=null;render();return;}
  if(!premiumAccess()&&!state.printableExamUnlocked){showNotice('Printable exams require Premium or an existing printable purchase.');return;}
- const id=t.dataset.examOpen||t.dataset.examExport||t.dataset.examShuffle||t.dataset.examRemove,exam=savedExams().find(x=>x.id===id);if(!exam)return;
+ const id=t.dataset.examOpen||t.dataset.examExport||t.dataset.examShuffle||t.dataset.examUnused||t.dataset.examReselect||t.dataset.examRemove,exam=savedExams().find(x=>x.id===id);if(!exam)return;
  if(t.dataset.examOpen){state.examPreviewId=id;render();return;}
  if(t.dataset.examExport){exportSavedExam(exam);return;}
  if(t.dataset.examRemove){askConfirmation('Remove this saved exam from this device? Downloaded Word files are kept.',{type:'remove-exam',id});return;}
- try{const copies=createExamSets(exam.questions,{count:exam.questions.length,mode:'shuffle',options:{...exam.options,set:exam.options.set+'-copy'},distribution:exam.distribution||{mode:'original'}});storeExams([...copies,...readExamLibrary(localStorage,state.nativeUid)]);state.examPreviewId=copies[0].id;render();}catch(error){showNotice(error.message,'Exam documents');}
+ if(t.dataset.examReselect){
+  const workspace=examWorkspace(),parent=examParentPath(exam),filters=exam.filters||{subjects:[...new Set(exam.questions.map(q=>q.subject))],sources:[...new Set(exam.questions.map(q=>q.sourceId))],type:'All'};
+  workspace.path=parent;workspace.manual={selected:[],search:'',page:0,selectedOnly:false,open:true};
+  const values=new URLSearchParams({...exam.options,set:nextExamSet(savedExams(),parent),folder:parent.join(' / '),count:exam.questions.length,setCount:1,setMode:'different',selectionMode:'manual',answerLayout:exam.distribution?.mode||'original'});
+  for(const id of filters.subjects||[])values.append('subjects',id);for(const id of filters.sources||[])values.append('sources',id);values.set('type',filters.type||'All');
+  document.querySelector('#exam-form')?.remove();state.examDraft=[...values.entries()];state.examDraftUid=state.nativeUid;state.examPreviewId=null;render();document.querySelector('#exam-builder')?.scrollIntoView({behavior:'smooth',block:'start'});return;
+ }
+ try{const created=createSiblingExam(questionBank,savedExams(),exam,t.dataset.examUnused?'unused':'shuffle');storeExams([created,...savedExams()]);examWorkspace().path=created.folderPath;state.examPreviewId=created.id;render();}catch(error){showNotice(error.message,'Exam documents');}
 },true);
 document.addEventListener('click',event=>{if(!event.target.closest('[data-action="confirm-ok"]')||state.confirmAction?.type!=='remove-exam')return;event.preventDefault();event.stopImmediatePropagation();try{storeExams(readExamLibrary(localStorage,state.nativeUid).filter(x=>x.id!==state.confirmAction.id));state.confirmAction=null;state.overlay=null;state.examPreviewId=null;render();}catch(error){showNotice(error.message,'Exam documents');}},true);
 
@@ -538,7 +564,7 @@ document.addEventListener('click',event=>{if(state.page==='active-quiz'&&quizExp
 function notificationPage(){const rows=readNotifications(localStorage,state.nativeUid);return `${title('Notifications','YOUR UPDATES','more')}<p class="small muted">Tournament starts, new study sources, app updates and access activations. Updates appear while connected or when you reopen the app.</p><button class="btn secondary" data-notifications-read>Mark all as read</button><div class="notification-list">${rows.map(n=>`<button class="action-row ${n.read?'':'notification-unread'}" data-notification-id="${esc(n.id)}"><span class="grow"><strong>${esc(n.title)}</strong><small>${esc(n.body)}</small><small>${esc(new Date(n.createdAt).toLocaleString())}</small></span><span>›</span></button>`).join('')||'<div class="glass pad">You’re all caught up.</div>'}</div>`;}
 function notifyApp(event){try{return addNotification(localStorage,state.nativeUid,event);}catch{return false;}}
 const authBeforeNotifications=window.esasNative.auth;
-window.esasNative.auth=function(raw){authBeforeNotifications(raw);if(!state.nativeUid)return;notifyApp({id:'release:2.7.0',title:'New exam sources available',body:'Exams 18 and 20 are in Past Exam(Answer key by AI) / 2026. Resources refresh automatically.',target:'sources'});render();};
+window.esasNative.auth=function(raw){authBeforeNotifications(raw);if(!state.nativeUid)return;notifyApp({id:'release:2.8.0',title:'Printable exams improved',body:'Choose questions manually or automatically, organize exam sets in folders, and create sets using unused questions.',target:'sources'});render();};
 const entitlementBeforeNotifications=window.esasNative.entitlement;
 window.esasNative.entitlement=function(raw){const current=JSON.parse(raw),key='activationSeen.'+state.nativeUid,previous=get(key,{}),event=activationEvent(current,previous);if(event)notifyApp(event);if(state.nativeUid)put(key,{paid:Number(current.paidUntil??current.accessUntil)||0,premium:Number(current.premiumUntil)||0});entitlementBeforeNotifications(raw);};
 const tournamentBeforeNotifications=window.esasNative.tournament;
@@ -573,3 +599,38 @@ window.addEventListener?.('esas-resume',()=>{catalogUpdates.flush();refreshResou
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){catalogUpdates.flush();refreshResources();}});
 const goBeforeResourceRefresh=go;
 go=function(page){goBeforeResourceRefresh(page);catalogUpdates.flush();};
+
+// Printable workspace controls use the existing account and entitlement boundaries.
+document.addEventListener('click',event=>{
+ const t=event.target.closest('[data-exam-folder],[data-exam-new-folder],[data-exam-cancel-folder],[data-exam-start],[data-exam-open-picker],[data-exam-selected-only],[data-exam-select-page],[data-exam-clear-selection],[data-exam-picker-page]');if(!t)return;
+ event.preventDefault();event.stopImmediatePropagation();const workspace=examWorkspace();stashExamDraft();
+ try{
+  if(t.hasAttribute('data-exam-folder')){workspace.path=normalizeExamPath(JSON.parse(t.dataset.examFolder));workspace.creatingFolder=false;render();return;}
+  if(t.hasAttribute('data-exam-new-folder')){workspace.creatingFolder=true;render();document.querySelector('#exam-folder-form input')?.focus();return;}
+  if(t.hasAttribute('data-exam-cancel-folder')){workspace.creatingFolder=false;render();return;}
+  if(t.hasAttribute('data-exam-start')){
+   const form=document.querySelector('#exam-form');if(form){form.elements.folder.value=workspace.path.length?workspace.path.join(' / '):'ESAS Practice Exams';form.elements.set.value=nextExamSet(savedExams(),normalizeExamPath(form.elements.folder.value));stashExamDraft();}
+   document.querySelector('#exam-builder')?.scrollIntoView({behavior:'smooth',block:'start'});document.querySelector('#exam-form [name="title"]')?.focus({preventScroll:true});return;
+  }
+  if(t.hasAttribute('data-exam-open-picker'))workspace.manual.open=true;
+  if(t.hasAttribute('data-exam-selected-only')){workspace.manual.selectedOnly=!workspace.manual.selectedOnly;workspace.manual.page=0;workspace.manual.search='';state.examPickerReset=true;}
+  if(t.hasAttribute('data-exam-clear-selection'))workspace.manual.selected=[];
+  if(t.hasAttribute('data-exam-picker-page')){workspace.manual.page=Math.max(0,Number(t.dataset.examPickerPage)||0);state.examPickerReset=true;}
+  if(t.hasAttribute('data-exam-select-page')){const selected=new Set(workspace.manual.selected);document.querySelectorAll('[data-exam-select]').forEach(input=>selected.add(input.dataset.examSelect));workspace.manual.selected=[...selected];}
+  render();
+ }catch(error){showNotice(error.message,'Exam folders');}
+},true);
+document.addEventListener('submit',event=>{
+ if(event.target.id!=='exam-folder-form')return;event.preventDefault();event.stopImmediatePropagation();
+ try{const workspace=examWorkspace(),name=new FormData(event.target).get('folderName'),folders=readExamFolders(localStorage,state.nativeUid),next=addExamFolder(folders,workspace.path,name);saveExamFolders(localStorage,state.nativeUid,next);workspace.path=normalizeExamPath([...workspace.path,name]);workspace.creatingFolder=false;const builder=document.querySelector('#exam-form');if(builder){builder.elements.folder.value=workspace.path.join(' / ');builder.elements.set.value=nextExamSet(savedExams(),workspace.path);stashExamDraft();}render();}catch(error){showNotice(error.message,'Exam folders');}
+},true);
+document.addEventListener('change',event=>{
+ if(event.target.hasAttribute('data-exam-select')){const selected=new Set(examWorkspace().manual.selected);if(event.target.checked)selected.add(event.target.dataset.examSelect);else selected.delete(event.target.dataset.examSelect);examWorkspace().manual.selected=[...selected];stashExamDraft();render();return;}
+ if(event.target.closest('#exam-form')&&['selectionMode','subjects','sources','type','count','setCount','setMode'].includes(event.target.name)){stashExamDraft();examWorkspace().manual.page=0;render();}
+});
+document.addEventListener('input',event=>{
+ if(event.target.closest('#exam-form')&&['count','setCount'].includes(event.target.name)){stashExamDraft();const data=new FormData(event.target.closest('form')),summary=document.querySelector('.exam-selection-summary');if(summary&&data.get('selectionMode')==='manual')summary.textContent=`${examWorkspace().manual.selected.length} selected · Select exactly ${Number(data.get('count'))*(data.get('setMode')==='different'?Number(data.get('setCount')):1)} questions for this configuration.`;return;}
+ if(!event.target.hasAttribute('data-exam-search'))return;const workspace=examWorkspace(),position=event.target.selectionStart;workspace.manual.search=event.target.value;workspace.manual.page=0;state.examPickerReset=true;stashExamDraft();render();const input=document.querySelector('[data-exam-search]');input?.focus({preventScroll:true});if(position!==null)input?.setSelectionRange(position,position);
+});
+const authBeforeExamWorkspace=window.esasNative.auth;
+window.esasNative.auth=function(raw){if((JSON.parse(raw).uid||null)!==state.nativeUid){state.examWorkspace=null;state.examDraft=null;state.examDraftUid=null;state.examPreviewId=null;state.lastRenderedPage=null;}authBeforeExamWorkspace(raw);};

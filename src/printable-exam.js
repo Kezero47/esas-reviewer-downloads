@@ -6,7 +6,7 @@ export const EXAM_PRODUCT = 'printable-exam';
 export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const xml = value => String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 export function examQuestions(bank, {subjects = [], sources = [], type = 'All'} = {}) {
-  const rows=bank.filter(q => q.quality === 'ready' && Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.choices?.length && (!subjects.length || subjects.includes(q.subject)) && (!sources.length || sources.includes(q.sourceId)) && (type === 'All' || q.type === type));
+  const rows=bank.filter(q => q.quality === 'ready' && q.eligibleForScoredQuiz !== false && Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.choices?.length && (!subjects.length || subjects.includes(q.subject)) && (!sources.length || sources.includes(q.sourceId)) && (type === 'All' || q.type === type));
   return sources.length>1?uniqueQuestions(rows):rows;
 }
 export function sourceQuestionFolders(bank, subjectId, registry) {

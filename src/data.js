@@ -1,5 +1,6 @@
 import {economicsQuestions,economicsSources} from './economics-questions.js';
 import {correctAnswer} from './answer-corrections.js';
+import {sourceAnswerAudit} from './source-answer-audit.js';
 import {ownerExamSources} from './owner-exam-sources.js';
 import {importedQuestions} from './imported-questions.js';
 
@@ -92,6 +93,14 @@ export const sourceRegistry = [
   {id:'past-2025-exam-14',title:'Fluid Mechanics & Ethics/Contracts • Past Exam • 2025 • RSU Exam 14 Set A',fullTitle:'Romblon State University — EE Correlation 2 — ESAS Exam 14 Set A',subjectIds:['fluids','ethics-contracts'],sourceType:'past-exam',sourceYear:'2025',uploaderName:'Kezero',uploadedAt:'2026-10-11',pages:0,status:'80 owner-confirmed questions',kind:'Past exams'},
   {id:'owner-import',title:'Multiple ESAS Subjects • Owner Import • Undated • Approved JSONL',fullTitle:'Owner-approved JSONL imports',subjectIds:[],sourceType:'owner-import',sourceYear:'Undated',uploaderName:'Shown per approved import',uploadedAt:'Shown per approved import',pages:0,status:'Questions published through the verified owner workflow',kind:'Owner import'}
 ];
+
+for(const sourceId of sourceAnswerAudit.scopeSourceIds){
+ const source=sourceRegistry.find(s=>s.id===sourceId);
+ if(!source)throw Error('Audited source missing: '+sourceId);
+ const rows=questionBank.filter(q=>q.sourceId===sourceId),held=rows.filter(q=>q.quality!=='ready').length;
+ source.status=`Answer review 19 October 2026: ${rows.length-held} scored · ${held} held for review`;
+ source.answerAuditId=sourceAnswerAudit.auditId;
+}
 
 export const initialSubmissions = [
   {id:'sample-1', title:'Sample resource submission', category:'Reviewer', submittedBy:'Demo learner', status:'Pending', detail:'Demonstrates the review and approval interface. No source content is published.'}
