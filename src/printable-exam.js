@@ -16,24 +16,27 @@ export function sourceQuestionFolders(bank, subjectId, registry) {
 function paragraph(text, {bold = false, center = false, keep = false, before = 0} = {}) {
   return `<w:p><w:pPr>${center?'<w:jc w:val="center"/>':''}${keep?'<w:keepNext/>':''}<w:keepLines/><w:spacing w:before="${before}" w:after="0" w:line="252" w:lineRule="auto"/></w:pPr><w:r><w:rPr>${bold?'<w:b/>':''}</w:rPr>${String(text??'').split(/\r\n|\r|\n/).map(line=>`<w:t xml:space="preserve">${xml(line)}</w:t>`).join('<w:br/>')}</w:r></w:p>`;
 }
-function section(columns, type = '') {
-  return `<w:sectPr>${type?`<w:type w:val="${type}"/>`:''}<w:pgSz w:w="12240" w:h="18500"/><w:pgMar w:top="576" w:right="720" w:bottom="792" w:left="720" w:header="288" w:footer="288"/><w:cols w:num="${columns}" w:space="490"/></w:sectPr>`;
+export const EXAM_PAPER_SIZES={a4:{label:'A4',width:11906,height:16838},letter:{label:'Letter',width:12240,height:15840},legal13:{label:'Legal (8.5 × 13 in)',width:12240,height:18720}};
+export function examPaperSize(value){return EXAM_PAPER_SIZES[value]||{label:'Original paper',width:12240,height:18500};}
+function section(columns, type = '', paperSize = '') {
+  return `<w:sectPr>${type?`<w:type w:val="${type}"/>`:''}<w:pgSz w:w="${examPaperSize(paperSize).width}" w:h="${examPaperSize(paperSize).height}"/><w:pgMar w:top="576" w:right="720" w:bottom="792" w:left="720" w:header="288" w:footer="288"/><w:cols w:num="${columns}" w:space="490"/></w:sectPr>`;
 }
 export function examDocumentXml(questions, options = {}) {
   if (!questions.length || questions.some(q => !examQuestions([q]).length)) throw new Error('Select questions with verified answer keys.');
   const columns = Number(options.columns) === 2 ? 2 : 1;
+  const keyColumnWidth=Math.floor((examPaperSize(options.paperSize).width-1440)/4);
   const header = [options.institution, options.department, options.course, options.title || 'ESAS PRACTICE EXAM', options.set ? `SET ${options.set}` : ''].filter(Boolean).map(t => paragraph(t,{bold:true,center:true})).join('');
   const instructions = paragraph('Name: ______________________________   Section: __________   Score: __________',{before:120}) + paragraph('Instruction: Select the correct answer for each question. Mark only one answer per item.',{before:120}) + paragraph('MULTIPLE CHOICE',{bold:true,before:120});
-  const headerEnd = `<w:p><w:pPr>${section(1)}</w:pPr></w:p>`;
+  const headerEnd = `<w:p><w:pPr>${section(1,'',options.paperSize)}</w:pPr></w:p>`;
   const body = questions.map((q,i) => paragraph(`${i+1}. ${q.prompt}`,{keep:true,before:100}) + diagramXml(q,i,columns) + q.choices.map((c,j) => paragraph(`${String.fromCharCode(65+j)}. ${c}`,{keep:j<q.choices.length-1})).join('')).join('');
-  const questionsEnd = `<w:p><w:pPr>${section(columns,'continuous')}</w:pPr></w:p>`;
+  const questionsEnd = `<w:p><w:pPr>${section(columns,'continuous',options.paperSize)}</w:pPr></w:p>`;
   const answerRows = [];
   for (let i = 0; i < questions.length; i += 4) {
-    answerRows.push('<w:tr>' + questions.slice(i,i+4).map((q,j) => `<w:tc><w:tcPr><w:tcW w:w="2700" w:type="dxa"/></w:tcPr>${paragraph(`${i+j+1}. ${String.fromCharCode(65+q.answer)}`)}</w:tc>`).join('') + '</w:tr>');
+    answerRows.push('<w:tr>' + questions.slice(i,i+4).map((q,j) => `<w:tc><w:tcPr><w:tcW w:w="${keyColumnWidth}" w:type="dxa"/></w:tcPr>${paragraph(`${i+j+1}. ${String.fromCharCode(65+q.answer)}`)}</w:tc>`).join('') + '</w:tr>');
   }
-  const answers = paragraph('ANSWER KEY',{bold:true,center:true}) + paragraph(options.title || 'ESAS PRACTICE EXAM',{center:true}) + `<w:tbl><w:tblPr><w:tblW w:w="10800" w:type="dxa"/></w:tblPr><w:tblGrid>${'<w:gridCol w:w="2700"/>'.repeat(4)}</w:tblGrid>${answerRows.join('')}</w:tbl><w:p/>`;
+  const answers = paragraph('ANSWER KEY',{bold:true,center:true}) + paragraph(options.title || 'ESAS PRACTICE EXAM',{center:true}) + `<w:tbl><w:tblPr><w:tblW w:w="${keyColumnWidth*4}" w:type="dxa"/></w:tblPr><w:tblGrid>${`<w:gridCol w:w="${keyColumnWidth}"/>`.repeat(4)}</w:tblGrid>${answerRows.join('')}</w:tbl><w:p/>`;
   // A nextPage section starts the answer key in a full-width page after the exam.
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${header}${instructions}${headerEnd}${body}${questionsEnd}${answers}${section(1,'nextPage')}</w:body></w:document>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${header}${instructions}${headerEnd}${body}${questionsEnd}${answers}${section(1,'nextPage',options.paperSize)}</w:body></w:document>`;
 }
 const encoder = new TextEncoder();
 function crc32(bytes) { let crc = 0xffffffff; for (const byte of bytes) {crc ^= byte; for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);} return (crc^0xffffffff)>>>0; }

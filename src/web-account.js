@@ -74,6 +74,6 @@ export function installWebBridge(){
     const backend=await fetch('./tournament-config.json',{cache:'no-store'});if(backend.ok)tournamentApiUrl=(await backend.json()).apiUrl||'';
     sdk=module;const config=window.ESAS_FIREBASE_CONFIG;if(!config?.apiKey)throw Error('Web account configuration is missing.');
     const app=sdk.initializeApp(config);auth=sdk.getAuth(app);db=sdk.initializeFirestore(app,{localCache:sdk.persistentLocalCache({tabManager:sdk.persistentMultipleTabManager()})});
-    sdk.onAuthStateChanged(auth,async user=>{stop();emit('auth',user?{uid:user.uid,email:user.email,name:user.displayName,owner:owner()}:{});accountData();try{if(user)await ensureProfile(user);}catch(e){fail(e)}});
+    sdk.onAuthStateChanged(auth,async user=>{stop();emit('auth',user?{uid:user.uid,email:user.email,name:user.displayName,owner:owner()}:{});accountData();try{if(user&&navigator.onLine!==false)await ensureProfile(user);}catch(e){fail(e)}});
   }).catch(e=>{fail(e);throw e});
 }

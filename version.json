@@ -1,6 +1,6 @@
 {
-  "versionCode": 18,
-  "versionName": "2.8.0",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.8.0/ESAS-Reviewer-v2.8.0.apk",
-  "releaseNotes": "Adds manual and automatic printable-exam selection, exam folders with set subfolders, unused-question sets, and responsive controls. Existing saved exams remain compatible. Requires Android 8.0 or newer."
+  "versionCode": 19,
+  "versionName": "2.9.0",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.0/ESAS-Reviewer-v2.9.0.apk",
+  "releaseNotes": "Redesigned study screens; explicit exam subjects and sources with per-subject counts; A4, Letter and 8.5 x 13 paper; a draggable 25\u2013100% calculator; and verified owner offline access. Existing saved exams remain compatible."
 }

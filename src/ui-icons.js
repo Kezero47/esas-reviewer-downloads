@@ -1,5 +1,10 @@
 // Original, local line icons keep the interface consistent and available offline.
 const paths={
+ 'play':'<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/>',
+ 'folder':'<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm0 2h18"/>',
+ 'bookmark':'<path d="M6 3h12v19l-6-4-6 4Z"/>',
+ 'print':'<path d="M7 8V3h10v5M7 17H3V9h18v8h-4M7 14h10v7H7Z"/><path d="M17 11h1"/>',
+ 'search':'<circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/>',
  '⌂':'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
  '▥':'<path d="M12 5C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Zm0 0v15M5 8h4M5 12h4m6-4h4m-4 4h4"/>',
  '▣':'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zm0 8h6m-6 4h4"/>',
