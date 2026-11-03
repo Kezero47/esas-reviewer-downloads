@@ -21,13 +21,15 @@ export function installWebBridge(){
     listeners.push(sdk.onSnapshot(sdk.doc(db,'public_config','app'),row=>emit('config',row.data()||{}),fail));
     if(!user)return;
     listeners.push(sdk.onSnapshot(sdk.doc(db,'public_config','tournament'),()=>emit('tournamentChanged',{}),fail));
+    emit('accountStatus',{uid:user.uid,status:'loading'});
     listeners.push(sdk.onSnapshot(sdk.doc(db,'users',user.uid),async row=>{
       if(auth.currentUser?.uid!==user.uid)return;
+      emit('accountStatus',{uid:user.uid,status:row.metadata.fromCache?'cached':'fresh'});
       const d=row.data()||{},paid=ms(d.accessUntil),trial=d.accessSource==='Owner revoked'?0:ms(d.trialStartedAt)+72*3600000;
       emit('entitlement',{paidUntil:paid,premiumUntil:ms(d.premiumUntil),accessUntil:Math.max(paid,trial),trialUntil:trial,source:trial>paid?'Free trial':d.accessSource||'Free',printableExamUnlocked:d.printableExamUnlocked===true});
       const details={...d};if(!details.photoData&&d.photoPath){try{details.photoData=await sdk.getDownloadURL(sdk.ref(sdk.getStorage(),d.photoPath));}catch{}}
       emit('profileDetails',details);
-    },fail));
+    },()=>{if(auth.currentUser?.uid===user.uid)emit('accountStatus',{uid:user.uid,status:'failed'});}));
     bridge.loadMessages();
     if(owner())bridge.loadUsers();
   }

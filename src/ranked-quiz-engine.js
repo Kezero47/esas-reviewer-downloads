@@ -1,4 +1,4 @@
-import {filterQuizQuestions,shuffleValues,choiceOrder} from './quiz-engine.js';
+import {filterQuizQuestions,shuffleValues,choiceOrder,isScorableQuestion} from './quiz-engine.js';
 
 export function normalizeQuizCount(value,available){
   const maximum=Math.max(0,Math.floor(Number(available)||0));
@@ -13,7 +13,7 @@ export function quizPoolKey(setup){
   const sourceValue=setup.sources??(setup.source&&setup.source!=='all'?[setup.source]:[]);
   const subjects=(Array.isArray(subjectValue)?subjectValue:[subjectValue]).filter(Boolean).sort();
   const sources=(Array.isArray(sourceValue)?sourceValue:[sourceValue]).filter(Boolean).sort();
-  return JSON.stringify({subjects,sources,type:setup.type||'All'});
+  return JSON.stringify({subjects,sources,type:setup.type||'All',...(setup.topic?{topic:setup.topic}:{})});
 }
 
 const stringIds=value=>Array.isArray(value)?[...new Set(value.filter(id=>typeof id==='string'&&id))]:[];
@@ -83,7 +83,7 @@ export function recordRankedAttempt(progress,questions,attempt){
   const byId=new Map(questions.map(question=>[question.id,question])),answers={...current.answers};let newlyCompleted=0;
   for(const id of stringIds(attempt.ids)){
     if(Object.hasOwn(answers,id)||attempt.answers?.[id]===undefined)continue;
-    const question=byId.get(id);if(!question||question.subject!==attempt.subjectId)continue;
+    const question=byId.get(id);if(!isScorableQuestion(question)||question.subject!==attempt.subjectId||!Number.isInteger(attempt.answers[id])||attempt.answers[id]<0||attempt.answers[id]>=question.choices.length)continue;
     answers[id]=attempt.answers[id]===question.answer;newlyCompleted++;
   }
   const completedIds=Object.keys(answers),correct=completedIds.filter(id=>answers[id]).length,seconds=Math.max(0,Math.floor(Number(attempt.seconds)||0));

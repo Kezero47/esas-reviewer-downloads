@@ -1,6 +1,6 @@
 window.ESAS_PUBLIC_CONFIG = Object.freeze({
-  apkDownloadUrl: 'https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.2/ESAS-Reviewer-v2.9.2.apk',
-  apkVersion: 'Version 2.9.2',
+  apkDownloadUrl: 'https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.3/ESAS-Reviewer-v2.9.3.apk',
+  apkVersion: 'Version 2.9.3',
   tournamentsEnabled: true,
   automaticPaymentsEnabled: false,
   manualFacebookActivation: true,

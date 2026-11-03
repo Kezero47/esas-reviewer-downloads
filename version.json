@@ -1,6 +1,6 @@
 {
-  "versionCode": 21,
-  "versionName": "2.9.2",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.2/ESAS-Reviewer-v2.9.2.apk",
-  "releaseNotes": "Adds ESAS Book diagrams and 46 answer keys, merged reviewer folders, flexible study filters, a compact corner-resizable calculator, and lockable app zoom."
+  "versionCode": 22,
+  "versionName": "2.9.3",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.3/ESAS-Reviewer-v2.9.3.apk",
+  "releaseNotes": "Adds account-isolated study recovery, durable note and OCR drafts, safe backup restoration, question search and linked notes, diagram zoom, and accessibility improvements. Existing questions, purchases and signing identity are preserved."
 }

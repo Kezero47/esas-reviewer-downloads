@@ -8,7 +8,7 @@ export function questionDiagram(question){
 const escapeAlt=text=>String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function questionMediaHtml(question){
  const m=questionDiagram(question);if(!m)return '';
- return `<figure class="question-diagram"><img src="${m.base64?'data:image/png;base64,'+m.base64:m.src}" alt="${escapeAlt(m.alt)}" ${m.width?`width="${m.width}" height="${m.height}"`:''}></figure>`;
+ return `<figure class="question-diagram"><button type="button" class="diagram-open" data-diagram-open="${escapeAlt(question.id)}" aria-label="Open question diagram"><img src="${m.base64?'data:image/png;base64,'+m.base64:m.src}" alt="${escapeAlt(m.alt)}" ${m.width?`width="${m.width}" height="${m.height}"`:''}></button><figcaption>Open diagram to zoom and pan</figcaption></figure>`;
 }
 export async function loadExamDiagrams(questions,{fetch:fetcher=globalThis.fetch}={}){
  const loaded={},requests=new Map();

@@ -32,6 +32,7 @@ export function filterQuizQuestions(questions,setup){
   const sources=new Set(selectedSources);
   const matches = questions.filter(question=>
     selected.has(question.subject)
+    &&(!setup.topic||question.topic===setup.topic)
     &&sources.has(question.sourceId)
     &&(setup.type==='All'||question.type===setup.type)
   );
@@ -58,14 +59,23 @@ export function createQuizSelection(questions,setup,random=Math.random){
   return {ids,choiceOrders};
 }
 
-export function scoreQuiz(questions,ids,answers){
+export function isScorableQuestion(q){
+  return !!q && Array.isArray(q.choices) && q.choices.length>1
+    && Number.isInteger(q.answer) && q.answer>=0 && q.answer<q.choices.length
+    && !['held','needs_review','needs-review','review-only'].includes(q.quality)
+    && !['Needs Review','Draft','Rejected'].includes(q.status)
+    && q.eligibleForScoredQuiz!==false;
+}
+
+export function scoreQuiz(questions,ids,answers={}){
   const byId=new Map(questions.map(question=>[question.id,question]));
   const subjectStats={};
   const topicStats={};
-  let correct=0;
-  for(const id of ids){
+  let correct=0,total=0;
+  for(const id of new Set(ids)){
     const question=byId.get(id);
-    if(!question)continue;
+    if(!isScorableQuestion(question))continue;
+    total++;
     const isCorrect=answers[id]===question.answer;
     if(isCorrect)correct++;
     const subject=subjectStats[question.subject]??={attempts:0,correct:0};
@@ -76,7 +86,7 @@ export function scoreQuiz(questions,ids,answers){
     topic.attempts++;
     if(isCorrect)topic.correct++;
   }
-  return {correct,total:ids.length,subjectStats,topicStats};
+  return {correct,total,subjectStats,topicStats};
 }
 
 export function displayedAnswerLetter(choiceOrder,originalChoiceIndex){

@@ -76,3 +76,39 @@ body .screen{min-height:calc(100dvh / var(--app-zoom,1))}
 .app-size-settings{margin-top:13px}
 html[data-zoom-unlocked='true'] .screen{padding-bottom:160px}
 @media(min-width:900px){body .has-nav .bottom-nav{height:calc(100dvh / var(--app-zoom,1));min-height:0;max-height:calc(100dvh / var(--app-zoom,1));overflow-y:auto;overflow-x:hidden}}
+/* Study recovery and exam navigation share the existing theme tokens. */
+.recovery-actions,.question-grid{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.question-navigation{margin:20px 0;padding:16px;border:1px solid var(--border,#8293aa55);border-radius:16px}
+.question-navigation summary{cursor:pointer;font-weight:600;min-height:44px}
+.question-grid .pill{min-width:48px;min-height:44px}
+.storage-warning{margin-bottom:16px}
+.storage-warning strong{display:block}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent,#4e9fff);outline-offset:3px}
+@media(max-width:420px){.recovery-actions .btn{width:100%}.question-navigation{padding:12px}}
+
+/* Keep primary touch controls accessible without changing the compact key face. */
+body .topbar .icon-btn,body .topbar .avatar{min-width:44px;min-height:44px;flex-basis:44px}
+body .topbar [data-action='theme']{display:inline-flex}
+.app-zoom-toolbar button{min-width:44px;min-height:44px}
+.modal h2:focus,main h1:focus{outline:3px solid var(--accent);outline-offset:4px}
+.review-recommendations{margin:24px 0}
+@media(max-width:420px){body .topbar{flex-wrap:wrap}.topbar>.row:last-child{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Let branding take its own row at large app zoom instead of splitting words. */
+body .topbar>.row:first-child{flex:1 1 180px}
+body .brand-word{white-space:normal;overflow-wrap:normal;word-break:normal}
+body .brand-word em{display:inline-block;white-space:nowrap}
+body .brand-subtitle{white-space:normal;overflow-wrap:normal}
+
+.diagram-open{display:block;width:100%;border:0;padding:0;background:transparent;cursor:zoom-in;color:var(--ink)}
+.question-diagram figcaption{font-size:.8rem;color:var(--muted);margin:8px 0}
+.diagram-viewer{width:min(94vw,950px);max-height:92dvh;display:flex;flex-direction:column}
+.diagram-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.diagram-tools button{min-width:44px;min-height:44px}.diagram-pan{overflow:auto;max-height:65dvh;min-height:100px;touch-action:pan-x pan-y;cursor:grab;overscroll-behavior:contain}
+.diagram-pan img{display:block;height:auto;user-select:none}
+body .floating-calculator.expanded-controls>header{height:auto;flex-wrap:wrap;min-height:48px}
+body .floating-calculator.expanded-controls>header .icon-btn{width:44px;height:44px;min-height:44px;flex-basis:44px}
+body .expanded-controls .calculator-resize-corner{width:44px;height:44px}
+body .expanded-controls .calculator-resize-footer{height:44px}
+/* Dialogs must cover fixed navigation, zoom controls and the floating calculator. */
+body .modal-scrim{z-index:120}

@@ -10,13 +10,13 @@ export function migrateQuizLibrary(value, legacySession=null, legacyResult=null)
 export function saveLibrarySession(library, session, result=null) {
   if(!session||session.mode==='ranked')return library;
   const id=session.libraryId||quizId(),previous=library.find(x=>x.id===id);
-  const entry={...previous,id,createdAt:previous?.createdAt||Date.now(),status:result?'Completed':'Paused',session:{...session,libraryId:id},...(result?{result}:{})};
+  const entry={...previous,id,createdAt:previous?.createdAt||Date.now(),updatedAt:Date.now(),status:result?'Completed':'Paused',session:{...session,libraryId:id},...(result?{result}:{})};
   return [entry,...library.filter(x=>x.id!==id)];
 }
 export function wrongAnswerIds(questions,result) {
   if(!result||result.mode==='ranked')return [];
-  const byId=new Map(questions.map(q=>[q.id,q]));
-  return result.ids.filter(id=>{const q=byId.get(id);return q&&result.answers?.[id]!==undefined&&result.answers[id]!==q.answer;});
+  const byId=new Map((result.questions||questions).map(q=>[q.id,q])),available=new Set(questions.map(q=>q.id)),excluded=new Set((result.excluded||[]).map(q=>q.id));
+  return [...new Set(result.ids)].filter(id=>{const q=byId.get(id);return available.has(id)&&!excluded.has(id)&&q&&result.answers?.[id]!==undefined&&result.answers[id]!==q.answer;});
 }
 export function createWrongAnswerRetry(questions,result) {
   const ids=wrongAnswerIds(questions,result);if(!ids.length)return null;
@@ -30,4 +30,12 @@ export function createExamRetry(questions,result,shuffle=false) {
   if(shuffle)ids=shuffleValues(ids);
   return {...createWrongAnswerRetry(questions,{...result,answers:Object.fromEntries(ids.map(id=>[id,-1]))}),ids,
     choiceOrders:Object.fromEntries(ids.map(id=>[id,shuffle?choiceOrder(pool.get(id)):result.choiceOrders?.[id]||[0,1,2,3]])),category:shuffle?'Retry and shuffle':'Retry exam'};
+}
+
+// Read-only backup recoveries must not permanently reserve the live question pool.
+export function reservedQuestionIds(library,now=Date.now()) {
+  return new Set(library.filter(entry=>entry.status!=='Completed'&&entry.session?.mode!=='retry'
+    &&entry.session?.mode!=='recovery'&&entry.session?.originalMode!=='ranked'&&!entry.session?.recoveryExpired
+    &&!(entry.session?.recovered&&entry.session?.deadlineAt&&entry.session.deadlineAt<=now))
+    .flatMap(entry=>entry.session?.ids||[]));
 }
