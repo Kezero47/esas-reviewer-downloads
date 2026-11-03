@@ -1,4 +1,4 @@
-import {questionMedia} from './question-media.js';
+import {questionMedia,questionDiagram} from './question-media.js';
 import {uniqueQuestions} from './quiz-engine.js';
 // Native WordprocessingML export, packaged as an uncompressed ZIP for offline use.
 export const EXAM_PRICE = 249;
@@ -28,7 +28,7 @@ export function examDocumentXml(questions, options = {}) {
   const header = [options.institution, options.department, options.course, options.title || 'ESAS PRACTICE EXAM', options.set ? `SET ${options.set}` : ''].filter(Boolean).map(t => paragraph(t,{bold:true,center:true})).join('');
   const instructions = paragraph('Name: ______________________________   Section: __________   Score: __________',{before:120}) + paragraph('Instruction: Select the correct answer for each question. Mark only one answer per item.',{before:120}) + paragraph('MULTIPLE CHOICE',{bold:true,before:120});
   const headerEnd = `<w:p><w:pPr>${section(1,'',options.paperSize)}</w:pPr></w:p>`;
-  const body = questions.map((q,i) => paragraph(`${i+1}. ${q.prompt}`,{keep:true,before:100}) + diagramXml(q,i,columns) + q.choices.map((c,j) => paragraph(`${String.fromCharCode(65+j)}. ${c}`,{keep:j<q.choices.length-1})).join('')).join('');
+  const body = questions.map((q,i) => paragraph(`${i+1}. ${q.prompt}`,{keep:true,before:100}) + diagramXml(q,i,columns,options.diagrams) + q.choices.map((c,j) => paragraph(`${String.fromCharCode(65+j)}. ${c}`,{keep:j<q.choices.length-1})).join('')).join('');
   const questionsEnd = `<w:p><w:pPr>${section(columns,'continuous',options.paperSize)}</w:pPr></w:p>`;
   const answerRows = [];
   for (let i = 0; i < questions.length; i += 4) {
@@ -55,7 +55,7 @@ function zip(files) {
   const result=new Uint8Array(offset+size+22);let cursor=0;for(const p of [...parts,...central,end]){result.set(p,cursor);cursor+=p.length;}return result;
 }
 export function createExamDocx(questions, options = {}) {
-  const media=questions.flatMap((q,i)=>questionMedia[q.id]?[{...questionMedia[q.id],i}]:[]);
+  const media=questions.flatMap((q,i)=>{const m=options.diagrams?.[q.id]||questionDiagram(q);if(m&&!m.base64)throw Error('Load question diagrams before exporting.');return m?[{...m,i}]:[];});
   return zip({
     ...Object.fromEntries(media.map(m=>[`word/media/diagram${m.i}.png`,Uint8Array.from(atob(m.base64),c=>c.charCodeAt(0))])),
     '[Content_Types].xml':'<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>',
@@ -66,4 +66,4 @@ export function createExamDocx(questions, options = {}) {
   });
 }
 
-function diagramXml(q,i,columns){const m=questionMedia[q.id];if(!m)return '';const cx=Math.min(m.width*9525,columns===2?3000000:6000000),cy=Math.round(cx*m.height/m.width);return `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${i+1}" name="Diagram ${i+1}" descr="${xml(m.alt)}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${i+1}" name="diagram${i}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="diagram${i}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;}
+function diagramXml(q,i,columns,diagrams){const m=diagrams?.[q.id]||questionDiagram(q);if(!m)return '';if(!m.base64)throw Error('Load question diagrams before exporting.');const cx=Math.min(m.width*9525,columns===2?3000000:6000000),cy=Math.round(cx*m.height/m.width);return `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${i+1}" name="Diagram ${i+1}" descr="${xml(m.alt)}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${i+1}" name="diagram${i}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="diagram${i}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;}

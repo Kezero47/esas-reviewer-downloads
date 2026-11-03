@@ -20,8 +20,7 @@ export function sourceIdsForSubjects(questions,selectedSubjects=[]){
 }
 
 export function reconcileSelectedSources(value,availableSourceIds=[]){
-  const selected=normalizeSelectedSources(value,availableSourceIds);
-  return selected.length?selected:[...availableSourceIds];
+  return normalizeSelectedSources(value,availableSourceIds);
 }
 
 export function filterQuizQuestions(questions,setup){

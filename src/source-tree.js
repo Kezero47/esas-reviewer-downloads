@@ -1,4 +1,11 @@
-const migratePath=path=>{const p=cleanPath(path),match=/^RSU Past exam (.+)$/.exec(p[0]||'');return match?['Past Exams','RSU',match[1],...p.slice(1)]:p;};
+const migratePath=path=>{
+  const p=cleanPath(path),match=/^RSU Past exam (.+)$/.exec(p[0]||'');
+  if(match)return ['Past Exams','RSU',match[1],...p.slice(1)];
+  const root=value=>/^esas ?books?$/i.test(value||'')?'ESAS Books':/^pinoy ?bix$/i.test(value||'')?'PINOY BIX':null;
+  if(p[0]==='Reviewers'&&root(p[1]))return [root(p[1]),...p.slice(2)];
+  if(root(p[0]))return [root(p[0]),...p.slice(1)];
+  return p;
+};
 const cleanPath = path => (Array.isArray(path) ? path : String(path || '').split('/')).map(x=>String(x).trim()).filter(Boolean).slice(0,5).map(x=>x.slice(0,80));
 export function sourceFolderPath(source) {
   if(source.folderPath?.length)return migratePath(source.folderPath);

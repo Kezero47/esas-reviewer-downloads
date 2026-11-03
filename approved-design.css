@@ -48,13 +48,31 @@ body .choice.incorrect:after{content:'×';color:#ff9eae;margin-left:auto;align-s
 .accuracy-ring strong{font-size:clamp(24px,5vw,32px)}
 body .bottom-nav{height:auto;align-items:stretch}
 .subject-quota{margin:0 0 16px 12px;max-width:420px}.subject-quota input{max-width:150px}.exam-requirements{color:var(--muted);font-size:.85rem;margin:16px 0}
-.floating-calculator{position:fixed;z-index:90;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:auto;padding:10px 12px 12px;background:var(--card-strong);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 36px #0005;isolation:isolate}
-.floating-calculator>header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;touch-action:none;cursor:move;user-select:none;padding-bottom:5px;border-bottom:1px solid var(--line);margin-bottom:6px}
-.floating-calculator>header strong{font-size:14px;line-height:1.4}.floating-calculator>header .icon-btn{width:32px;height:32px;flex-basis:32px}
-.floating-calculator .calculator-device.canon-calculator{width:100%;gap:6px;align-items:center;margin:0;padding:0}
-.floating-calculator .canon-face{width:var(--floating-face-width);max-width:100%;flex-shrink:0}
-.floating-calculator .calculator-device .calculator-size-control{display:flex;flex-wrap:wrap;width:100%;height:auto;min-height:42px;gap:4px;font:12px/1.4 Inter,Arial,sans-serif}
-.floating-calculator .calculator-size-control input{flex:1 1 70px;min-width:40px;max-width:100%;height:28px}.floating-calculator .calculator-size-control .link-button{min-height:28px;font-size:12px;padding:3px 5px}
-.floating-calculator .canon-type-input{width:100%;max-width:100%}
+
 .exam-paper-scroll.full-size .exam-paper{width:var(--paper-width,816px);max-width:none;min-height:var(--paper-height,1233px)}
 .exam-filter-panel .switch-row span>small{display:block;margin-top:4px;color:var(--muted);font-size:.8rem}
+
+/* A compact tool window: scale the complete face, including every glyph. */
+.floating-calculator{position:fixed;z-index:90;padding:3px;max-width:calc(100vw - 16px);background:var(--card-strong);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 14px #0004;isolation:isolate;text-size-adjust:none;-webkit-text-size-adjust:none}
+.floating-calculator>header{display:flex;align-items:center;justify-content:space-between;height:28px;gap:0;touch-action:none;cursor:move;user-select:none}
+.floating-calculator>header strong{font:16px/1 Arial,sans-serif;padding:2px;flex:1}
+.floating-calculator>header .icon-btn{width:26px;min-width:0;height:26px;min-height:0;flex:0 0 26px;padding:0;font:16px/1 Arial,sans-serif;border:0;background:transparent}
+.floating-calculator .calculator-device.canon-calculator{margin:0;padding:0;gap:0}
+.floating-face-frame{position:relative;width:var(--floating-face-width);height:calc(var(--floating-face-width) * 1280 / 621);flex:none}
+.floating-calculator .canon-face{position:absolute;left:0;top:0;width:360px;max-width:none;border-width:4px;transform:scale(var(--floating-scale));transform-origin:top left}
+.floating-calculator .calculator-size-control{position:absolute;z-index:3;top:30px;right:0;width:min(260px,calc(100vw - 24px));height:auto;min-height:42px;display:flex;flex-wrap:wrap;gap:5px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card-strong);box-shadow:0 6px 16px #0005;font:12px/1.2 Arial,sans-serif}
+.floating-calculator .calculator-size-control input{min-width:60px;flex:1;height:24px}
+.floating-calculator .calculator-size-control .link-button{padding:3px;min-height:28px;font:12px/1.2 Arial,sans-serif}
+.floating-calculator .canon-type-input{width:100%;margin-bottom:3px}
+.calculator-resize-footer{position:relative;height:22px;display:flex;align-items:center;padding-left:3px;font:10px/1 Arial,sans-serif;color:var(--muted)}
+.calculator-resize-corner{position:absolute;right:-3px;bottom:-3px;width:25px;height:25px;padding:6px 2px 0 6px;border:0;background:transparent;color:var(--accent);cursor:nwse-resize;touch-action:none;font:22px/1 Arial,sans-serif}
+
+/* The floating calculator and zoom controls stay outside the scaled study UI. */
+body .app-shell{zoom:var(--app-zoom,1);width:100%;min-height:calc(100dvh / var(--app-zoom,1))}
+body .screen{min-height:calc(100dvh / var(--app-zoom,1))}
+.app-zoom-toolbar{position:fixed;z-index:80;right:8px;bottom:calc(80px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:9px;background:var(--card-strong);box-shadow:0 3px 12px #0004;color:var(--ink);font:13px/1.2 Arial,sans-serif}
+.app-zoom-toolbar button{min-width:32px;min-height:32px;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+.app-zoom-toolbar output{min-width:40px;text-align:center}
+.app-size-settings{margin-top:13px}
+html[data-zoom-unlocked='true'] .screen{padding-bottom:160px}
+@media(min-width:900px){body .has-nav .bottom-nav{height:calc(100dvh / var(--app-zoom,1));min-height:0;max-height:calc(100dvh / var(--app-zoom,1));overflow-y:auto;overflow-x:hidden}}
