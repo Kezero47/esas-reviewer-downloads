@@ -3,8 +3,8 @@
 const focusable='button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex="0"]';
 function locator(el){
  if(!el?.getAttribute)return null;
- for(const name of ['data-diagram-open','data-action','data-go','data-search','data-study-export','data-app-zoom-lock','data-calculator-options','data-calculator-minimize','name']){
-  if(el.hasAttribute(name))return `[${name}=${JSON.stringify(el.getAttribute(name))}]`;
+ for(const name of ['data-font','data-surface','data-appearance-color','data-appearance-reset','data-app-zoom-size','data-app-zoom-reset','data-code-copy','data-code-search','data-code-filter','data-code-page','data-code-create','data-code-create-cancel','data-question-index','data-question-mark','data-question-note','data-question-summary','data-settings-section','data-calculator-expanded','data-calculator-resize','data-diagram-open','data-action','data-go','data-search','data-study-export','data-app-zoom-lock','data-calculator-options','data-calculator-minimize','name']){
+  if(el.hasAttribute(name)){const selector=`[${name}=${JSON.stringify(el.getAttribute(name))}]`,label=el.getAttribute('aria-label');return label?selector+`[aria-label=${JSON.stringify(label)}]`:selector;}
  }
  return null;
 }

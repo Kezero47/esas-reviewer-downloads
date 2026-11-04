@@ -3,7 +3,7 @@ import {callTournament} from './tournament-client.js';
 export function installWebBridge(){
   if(window.NativeBridge)return;
   window.ESAS_WEB=true;
-  let sdk,auth,db,ready,tournamentApiUrl='',listeners=[],usersListener,messagesListener;
+  let sdk,auth,db,ready,tournamentApiUrl='',listeners=[],usersListener,messagesListener,codesListener;
   const emit=(name,data)=>window.esasNative?.[name]?.(JSON.stringify(data));
   const fail=e=>emit('operation',{error:e?.message||String(e)});
   const run=fn=>Promise.resolve(ready).then(fn).catch(fail);
@@ -11,13 +11,28 @@ export function installWebBridge(){
   const owner=()=>auth.currentUser?.email?.toLowerCase()==='kerrmagramo47@gmail.com'&&auth.currentUser.emailVerified;
   const requireUser=()=>{if(!auth.currentUser)throw Error('Sign in first.');return auth.currentUser};
   const requireOwner=()=>{if(!owner())throw Error('Verified owner access required.');};
-  function stop(){listeners.splice(0).forEach(f=>f());usersListener?.();usersListener=null;messagesListener?.();messagesListener=null;}
+  function stop(){listeners.splice(0).forEach(f=>f());usersListener?.();usersListener=null;messagesListener?.();messagesListener=null;codesListener?.();codesListener=null;}
   async function ensureProfile(user){
     const ref=sdk.doc(db,'users',user.uid);
     await sdk.runTransaction(db,async tx=>{const row=await tx.get(ref);if(!row.exists())tx.set(ref,{uid:user.uid,email:user.email,name:(user.displayName||user.email.split('@')[0]).slice(0,80),lastSeenAt:sdk.serverTimestamp(),trialStartedAt:sdk.serverTimestamp()});else tx.update(ref,{lastSeenAt:sdk.serverTimestamp()});});
   }
+  function loadActivationCodes(){
+    requireOwner();const uid=auth.currentUser.uid;codesListener?.();
+    codesListener=sdk.onSnapshot(sdk.collection(db,'activationCodes'),rows=>{
+      if(auth.currentUser?.uid!==uid||!owner())return;
+      emit('activationCodes',{uid,items:rows.docs.map(row=>{const d=row.data();return {id:row.id,code:d.code||row.id,kind:d.kind??'pro',days:d.grantDays??d.days??0,createdAt:ms(d.createdAt),expiresAt:ms(d.expiresAt),revoked:d.revoked===true,usedByUid:d.usedByUid||null};})});
+    },fail);
+  }
+  async function activationCall(data){
+    const user=requireUser();if(data.action==='createActivationCode')requireOwner();
+    const result=await callTournament({apiUrl:tournamentApiUrl,getToken:()=>user.getIdToken(),data});
+    if(auth.currentUser?.uid!==user.uid)return;
+    if(data.action==='createActivationCode')loadActivationCodes();else accountData();
+    emit('operation',{message:result.message});
+  }
   function accountData(){
     stop();const user=auth.currentUser;
+    if(user&&owner())loadActivationCodes();
     listeners.push(sdk.onSnapshot(sdk.doc(db,'public_config','app'),row=>emit('config',row.data()||{}),fail));
     if(!user)return;
     listeners.push(sdk.onSnapshot(sdk.doc(db,'public_config','tournament'),()=>emit('tournamentChanged',{}),fail));
@@ -55,6 +70,10 @@ export function installWebBridge(){
     resetPassword:email=>run(async()=>{await sdk.sendPasswordResetEmail(auth,email.trim());emit('operation',{message:'Password reset email sent.'})}),
     signOut:()=>run(()=>sdk.signOut(auth)),
     loadAccountData:()=>run(accountData),
+    createActivationCode:(days,expiresAt)=>run(()=>activationCall({action:'createActivationCode',kind:'pro',days,expiresAt})),
+    createActivationCodeForProduct:(kind,days,expiresAt)=>run(()=>activationCall({action:'createActivationCode',kind,days,expiresAt})),
+    redeemActivationCode:code=>run(()=>activationCall({action:'redeemActivationCode',code})),
+    revokeActivationCode:id=>run(async()=>{requireOwner();await sdk.updateDoc(sdk.doc(db,'activationCodes',id),{revoked:true});}),
     loadUsers:()=>run(()=>{requireOwner();usersListener?.();usersListener=sdk.onSnapshot(sdk.collection(db,'users'),rows=>emit('users',{items:rows.docs.map(r=>{const d=r.data();return {...d,uid:r.id,lastSeenAt:ms(d.lastSeenAt),accessUntil:Math.max(ms(d.accessUntil),d.accessSource==='Owner revoked'?0:ms(d.trialStartedAt)+72*3600000)};}).sort((a,b)=>(a.email||'').localeCompare(b.email||''))}),fail)}),
     loadMessages:()=>run(()=>{const user=requireUser();messagesListener?.();const all=sdk.collection(db,'messages'),ref=owner()?all:sdk.query(all,sdk.where('threadUid','==',user.uid));messagesListener=sdk.onSnapshot(ref,rows=>{if(auth.currentUser?.uid!==user.uid)return;emit('messages',{items:rows.docs.map(row=>{const d=row.data();return {...d,id:row.id,createdAt:ms(d.createdAt)};}).filter(d=>!(d.hiddenFor||[]).includes(user.uid)).sort((a,b)=>a.createdAt-b.createdAt)});},fail);}),
     sendMessage:(requestedThreadUid,kind,body)=>run(async()=>{const user=requireUser(),text=String(body).trim(),threadUid=owner()?requestedThreadUid:user.uid;if(!threadUid||!text||text.length>2000)throw Error('Enter a message of 1 to 2000 characters.');await sdk.addDoc(sdk.collection(db,'messages'),{threadUid,senderUid:user.uid,senderName:(user.displayName||user.email||'Learner').slice(0,100),senderEmail:user.email,kind:String(kind||'Message').slice(0,30),body:text,hiddenFor:[],unsent:false,createdAt:sdk.serverTimestamp()});if(auth.currentUser?.uid===user.uid)emit('messageSent',{uid:user.uid,threadUid,body:text});}),

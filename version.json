@@ -1,6 +1,6 @@
 {
-  "versionCode": 22,
-  "versionName": "2.9.3",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.3/ESAS-Reviewer-v2.9.3.apk",
-  "releaseNotes": "Adds account-isolated study recovery, durable note and OCR drafts, safe backup restoration, question search and linked notes, diagram zoom, and accessibility improvements. Existing questions, purchases and signing identity are preserved."
+  "versionCode": 23,
+  "versionName": "2.9.4",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.4/ESAS-Reviewer-v2.9.4.apk",
+  "releaseNotes": "Compact quiz, More and Settings layouts; subject-only labels; collapsed question navigation; aligned calculator controls; and secure Pro, Premium and Printable Exam activation codes. Existing questions, purchases and study data are preserved."
 }

@@ -90,7 +90,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
 body .topbar .icon-btn,body .topbar .avatar{min-width:44px;min-height:44px;flex-basis:44px}
 body .topbar [data-action='theme']{display:inline-flex}
 .app-zoom-toolbar button{min-width:44px;min-height:44px}
-.modal h2:focus,main h1:focus{outline:3px solid var(--accent);outline-offset:4px}
+.modal h2:focus,main h1:focus{outline:none}
 .review-recommendations{margin:24px 0}
 @media(max-width:420px){body .topbar{flex-wrap:wrap}.topbar>.row:last-child{margin-left:auto}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -112,3 +112,138 @@ body .expanded-controls .calculator-resize-corner{width:44px;height:44px}
 body .expanded-controls .calculator-resize-footer{height:44px}
 /* Dialogs must cover fixed navigation, zoom controls and the floating calculator. */
 body .modal-scrim{z-index:120}
+
+/* Compact study screens: keep reading space and deliberate touch targets. */
+body [data-page='active-quiz'] .quiz-head{margin-bottom:12px}
+body .quiz-progress{margin:8px 0 14px}
+body .question-card{padding:16px}
+body .question-card h2{font-size:1.1rem;line-height:1.5;margin:12px 0 16px}
+body .question-subject{font-size:.72rem;line-height:1.4;padding:4px 8px}
+body .question-card .choice{min-height:calc(48px / var(--app-zoom,1));padding:9px 11px;gap:11px;margin:7px 0;align-items:center;font-size:.95rem;line-height:1.45}
+body .question-card .choice-letter{height:27px;min-width:27px;width:27px;flex-basis:27px;font-size:.8rem}
+body .question-card .choice.correct,body .question-card .choice.incorrect{border-width:1px}
+body .question-card .answer-feedback{padding:12px;margin-top:12px;font-size:.9rem;line-height:1.5}
+.question-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:4px}
+.question-tools .link-button{min-height:calc(44px / var(--app-zoom,1));padding:6px 0;font-size:.8rem}
+.question-tools [aria-pressed='true']{color:var(--ink)}
+body .question-navigation{padding:0 12px;margin:6px 0 14px;border-color:var(--line);border-radius:12px;background:var(--card)}
+.question-navigation summary{display:flex;align-items:center;gap:8px;min-height:calc(44px / var(--app-zoom,1));padding:8px 0;font-size:.88rem;list-style:none}
+.question-navigation summary::-webkit-details-marker{display:none}
+.question-navigation summary small{margin-left:auto;color:var(--muted);font-size:.75rem;font-weight:400}
+.question-navigation summary:after{content:'›';font-size:1.4rem;color:var(--muted);transform:rotate(0deg)}
+.question-navigation[open] summary:after{transform:rotate(90deg)}
+.question-navigation .navigation-legend{font-size:.73rem;margin:4px 0 8px}
+.question-navigation .question-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(calc(44px / var(--app-zoom,1)),1fr));gap:6px;margin:8px 0 12px}
+.question-grid .pill{min-width:0;min-height:calc(44px / var(--app-zoom,1));padding:4px;border-radius:9px;font-size:.8rem}
+body [data-page='active-quiz'] .sticky-actions{margin-top:12px;gap:10px}
+body [data-page='active-quiz'] .sticky-actions .btn{min-height:calc(44px / var(--app-zoom,1))}
+body :is([data-page='more'],[data-page='settings'],[data-page='activation-codes']) .topbar{margin-bottom:16px}
+body :is([data-page='more'],[data-page='settings'],[data-page='activation-codes']) .page-heading{margin:4px 0 18px}
+body :is([data-page='more'],[data-page='settings'],[data-page='activation-codes']) .page-heading h1{font-size:1.65rem;line-height:1.25;margin:0 0 4px}
+body :is([data-page='more'],[data-page='settings'],[data-page='activation-codes']) .page-heading p{font-size:.8rem;line-height:1.4}
+body [data-page='more'] .action-row{min-height:calc(52px / var(--app-zoom,1));padding:9px 2px;gap:11px}
+body [data-page='more'] .action-row .glyph{width:34px;height:34px;flex:0 0 34px;border-radius:9px}
+body [data-page='more'] .action-row .glyph .ui-icon{width:21px;height:21px}
+body [data-page='more'] .action-row strong{font-size:.9rem;line-height:1.35}
+body [data-page='more'] .action-row small{font-size:.74rem;line-height:1.35;margin-top:2px}
+body [data-page='more'] .more-group{margin:17px 0}
+body [data-page='more'] .more-group>h2{font-size:.72rem;margin:0 0 3px;letter-spacing:.07em}
+body [data-page='more'] .membership-strip{padding:10px 12px;gap:10px;margin:8px 0 16px}
+body [data-page='more'] .membership-strip strong{font-size:.94rem}
+body [data-page='more'] .membership-strip small{font-size:.73rem;margin-top:2px}
+.settings-stack{display:grid;gap:12px;max-width:760px}
+body .settings-section{padding:0 16px;border-radius:14px}
+.settings-section>h2{font-size:.8rem;letter-spacing:.04em;color:var(--muted);margin:15px 0 4px}
+.account-status-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.account-status-strip>div{min-width:0}
+.account-status-strip strong{display:block;font-size:.88rem;line-height:1.4}
+.account-status-strip small{display:block;font-size:.75rem;line-height:1.45;color:var(--muted);margin-top:2px}
+.account-status-strip .link-button{flex-shrink:0;font-size:.75rem;min-height:calc(44px / var(--app-zoom,1));padding:6px 0}
+.status-failed small{color:var(--ink)}
+.offline-status-strip{padding:12px 0;border-bottom:1px solid var(--line)}
+.offline-status-strip h3{font-size:.88rem;margin:0 0 3px}
+.offline-status-strip p{font-size:.75rem;line-height:1.5;color:var(--muted);margin:0}
+.offline-status-strip .btn{margin-top:8px}
+.settings-disclosure>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:calc(54px / var(--app-zoom,1));padding:10px 0;font-size:.9rem;font-weight:600}
+.settings-disclosure>summary::-webkit-details-marker{display:none}
+.settings-disclosure>summary:after{content:'›';font-size:1.4rem;font-weight:400;color:var(--muted)}
+.settings-disclosure[open]>summary:after{transform:rotate(90deg)}
+.settings-disclosure>summary small{display:block;font-size:.74rem;line-height:1.4;color:var(--muted);font-weight:400;margin-top:2px}
+.settings-disclosure+.settings-disclosure{border-top:1px solid var(--line)}
+.settings-theme{padding:10px 0;border-bottom:1px solid var(--line)}
+.settings-theme strong{font-size:.9rem}
+.settings-theme small{display:block;font-size:.74rem;margin-top:2px}
+.settings-theme .toggle{min-height:32px;min-width:52px}
+.settings-detail-body,.study-recovery-controls,.app-size-settings{margin:0;padding:0 0 14px}
+.study-recovery-controls h3{font-size:.88rem;margin:0 0 5px}
+.study-recovery-controls p,.app-size-settings p,.privacy-settings p{font-size:.76rem;line-height:1.55;margin:0 0 10px}
+.study-recovery-controls .recovery-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.study-recovery-controls .recovery-actions .btn{padding:10px 8px;font-size:.78rem;min-height:calc(44px / var(--app-zoom,1))}
+.study-recovery-controls .recovery-actions .btn:last-child:nth-child(odd){grid-column:1/-1}
+.settings-detail-body .btn,.app-size-settings .btn{font-size:.8rem;min-height:calc(44px / var(--app-zoom,1))}
+.settings-detail-body .field,.app-size-settings .field{font-size:.8rem;margin:10px 0;gap:6px}
+.settings-detail-body .subject-picker{padding:10px;margin:10px 0}
+.settings-detail-body .font-choices{gap:6px}
+.app-size-settings .link-button,.settings-detail-body .link-button{font-size:.76rem;min-height:calc(44px / var(--app-zoom,1))}
+@media(max-width:350px){.account-status-strip{align-items:flex-start;flex-wrap:wrap}.account-status-strip .link-button{padding:0}.study-recovery-controls .recovery-actions{grid-template-columns:1fr}}
+/* The face stays at its chosen scale; the toolbar gets its own minimum width. */
+.floating-calculator>header{height:32px;gap:1px}
+.floating-calculator>header strong{flex:1;min-width:19px;padding-left:4px}
+.floating-calculator>header .icon-btn{width:28px;height:28px;flex-basis:28px}
+.floating-calculator .floating-face-frame{margin-inline:auto}
+.floating-calculator .calculator-device.canon-calculator{align-items:center;min-width:0}
+.floating-calculator .calculator-resize-footer{height:22px;margin-top:2px}
+.floating-calculator .calculator-size-control{right:auto;max-width:calc(100vw - 16px)}
+body .floating-calculator.expanded-controls>header{gap:2px}
+
+/* Activation codes are a compact list, with creation available on demand. */
+.code-manager{max-width:780px}
+.code-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.code-list-heading h2{font-size:.95rem;margin:0 0 3px}
+.code-list-heading p{margin:0;font-size:.76rem;color:var(--muted);line-height:1.4}
+.code-list-heading .btn{font-size:.8rem;white-space:nowrap;min-height:calc(44px / var(--app-zoom,1));padding:9px 13px}
+.code-search input{width:100%;margin:0;font-size:.88rem;padding:11px 12px;min-height:calc(44px / var(--app-zoom,1))}
+.code-filters{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
+.code-filters .pill{font-size:.73rem;min-height:calc(44px / var(--app-zoom,1));padding:7px 10px;display:flex;align-items:center;gap:6px}
+.code-filters .pill span{font-size:.7rem;opacity:.8}
+.code-filters .pill[aria-pressed='true']{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+.code-copy-status{font-size:.76rem;color:var(--accent);min-height:0;margin:0}
+.code-copy-status:not(:empty){margin:8px 0}
+.code-list{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.code-row{padding:12px 14px;border-bottom:1px solid var(--line)}
+.code-row:last-child{border-bottom:0}
+.code-row-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.code-row code{font:600 .9rem/1.5 ui-monospace,monospace;overflow-wrap:anywhere;user-select:all;min-width:0}
+.code-status{font-size:.66rem;line-height:1.3;padding:4px 7px;border-radius:6px;white-space:nowrap;color:var(--muted);background:var(--soft);flex-shrink:0}
+.code-status-ready{color:var(--accent)}
+.code-status-expired,.code-status-revoked{color:var(--muted);background:var(--bg2)}
+.code-meta{display:flex;gap:5px;flex-wrap:wrap;font-size:.74rem;line-height:1.4;color:var(--muted);margin:3px 0 0}
+.code-meta strong{font-weight:500;color:var(--ink)}
+.code-row-footer{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.code-row-footer>small{color:var(--muted);font-size:.7rem;line-height:1.4}
+.code-row-footer>div{display:flex;gap:9px}
+.code-row-footer .link-button{font-size:.72rem;padding:6px 0;min-height:calc(44px / var(--app-zoom,1));min-width:calc(44px / var(--app-zoom,1));text-align:center}
+.code-row-footer [data-revoke-code]{color:var(--muted)}
+body .code-create-form{padding:14px;margin-bottom:14px;border-radius:14px}
+.code-create-form h2{font-size:.95rem;margin:0}
+.code-create-form>.row .link-button{min-height:44px;font-size:.78rem}
+.code-create-form .field{font-size:.8rem;gap:6px;margin:9px 0}
+.code-create-form input,.code-create-form select{width:100%;min-width:0;font-size:.9rem;min-height:calc(44px / var(--app-zoom,1));padding:10px;color-scheme:light}
+body[data-theme='dark'] .code-create-form input,body[data-theme='dark'] .code-create-form select{color-scheme:dark}
+.code-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:center}
+.code-kind-description,.code-expiry-help{font-size:.74rem;line-height:1.5;color:var(--muted);margin:4px 0 8px}
+.code-unlock-summary strong{font-size:.8rem;display:block}
+.code-unlock-summary small{font-size:.72rem;display:block;color:var(--muted);line-height:1.4;margin-top:3px}
+.code-create-form>.btn{font-size:.85rem;min-height:44px;margin-top:5px}
+.code-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.8rem;margin-top:12px}
+.code-pagination .btn{font-size:.8rem;min-height:44px}
+@media(max-width:350px){.code-form-grid{grid-template-columns:1fr}.code-row{padding:11px}.code-row code{font-size:.82rem}}
+
+body .question-card .choice.correct{box-shadow:inset 0 0 0 1px #39dca2}
+body .question-card .choice.incorrect{box-shadow:inset 0 0 0 1px #ff8b9e}
+.code-search input{appearance:none;-webkit-appearance:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:11px;font-family:inherit}
+.code-search input::placeholder{color:var(--muted)}
+.code-filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+.code-filters .pill{flex-shrink:0;padding:6px 8px;font-size:.7rem;gap:4px}
+.floating-calculator>header strong{min-width:14px;padding:0 1px;flex:1}
+.floating-calculator>header .icon-btn{width:26px;height:28px;flex-basis:26px}
