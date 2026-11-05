@@ -1,4 +1,4 @@
-import {questionMedia,questionDiagram} from './question-media.js';
+import {questionDiagram} from './question-media.js';
 import {uniqueQuestions} from './quiz-engine.js';
 // Native WordprocessingML export, packaged as an uncompressed ZIP for offline use.
 export const EXAM_PRICE = 249;
@@ -54,8 +54,14 @@ function zip(files) {
   e.setUint32(0,0x06054b50,true);e.setUint16(8,central.length,true);e.setUint16(10,central.length,true);e.setUint32(12,size,true);e.setUint32(16,offset,true);
   const result=new Uint8Array(offset+size+22);let cursor=0;for(const p of [...parts,...central,end]){result.set(p,cursor);cursor+=p.length;}return result;
 }
+function exportDiagram(question,diagrams){
+ const original=questionDiagram(question);if(!original)return null;
+ const loaded=diagrams?.[question.id];if(!loaded)return original;
+ if(original.src?loaded.src!==original.src:loaded.base64!==original.base64)throw Error('Question diagram does not match its reviewed source.');
+ return loaded;
+}
 export function createExamDocx(questions, options = {}) {
-  const media=questions.flatMap((q,i)=>{const m=options.diagrams?.[q.id]||questionDiagram(q);if(m&&!m.base64)throw Error('Load question diagrams before exporting.');return m?[{...m,i}]:[];});
+  const media=questions.flatMap((q,i)=>{const m=exportDiagram(q,options.diagrams);if(m&&!m.base64)throw Error('Load question diagrams before exporting.');return m?[{...m,i}]:[];});
   return zip({
     ...Object.fromEntries(media.map(m=>[`word/media/diagram${m.i}.png`,Uint8Array.from(atob(m.base64),c=>c.charCodeAt(0))])),
     '[Content_Types].xml':'<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>',
@@ -66,4 +72,4 @@ export function createExamDocx(questions, options = {}) {
   });
 }
 
-function diagramXml(q,i,columns,diagrams){const m=diagrams?.[q.id]||questionDiagram(q);if(!m)return '';if(!m.base64)throw Error('Load question diagrams before exporting.');const cx=Math.min(m.width*9525,columns===2?3000000:6000000),cy=Math.round(cx*m.height/m.width);return `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${i+1}" name="Diagram ${i+1}" descr="${xml(m.alt)}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${i+1}" name="diagram${i}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="diagram${i}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;}
+function diagramXml(q,i,columns,diagrams){const m=exportDiagram(q,diagrams);if(!m)return '';if(!m.base64)throw Error('Load question diagrams before exporting.');const cx=Math.min(m.width*9525,columns===2?3000000:6000000),cy=Math.round(cx*m.height/m.width);return `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:drawing><wp:inline><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${i+1}" name="Diagram ${i+1}" descr="${xml(m.alt)}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${i+1}" name="diagram${i}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="diagram${i}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;}

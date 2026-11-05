@@ -1,6 +1,6 @@
 {
-  "versionCode": 23,
-  "versionName": "2.9.4",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.4/ESAS-Reviewer-v2.9.4.apk",
-  "releaseNotes": "Compact quiz, More and Settings layouts; subject-only labels; collapsed question navigation; aligned calculator controls; and secure Pro, Premium and Printable Exam activation codes. Existing questions, purchases and study data are preserved."
+  "versionCode": 24,
+  "versionName": "2.9.5",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.5/ESAS-Reviewer-v2.9.5.apk",
+  "releaseNotes": "Subject terminology glossary with 2,580 entries and search; corrected unrelated question diagrams, including cached quizzes and new Word exports. Existing answer keys, purchases and saved study data are preserved."
 }
