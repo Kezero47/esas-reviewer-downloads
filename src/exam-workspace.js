@@ -35,8 +35,12 @@ export function createSiblingExam(bank,rows,exam,kind,random=Math.random){
  const parent=examParentPath(exam),set=nextExamSet(rows,parent),options={...exam.options,set};
  let pool=exam.questions;
  if(kind==='unused'){
-  const family=rows.filter(r=>sameExamPath(examParentPath(r),parent)),used=new Set(family.flatMap(r=>r.questions.map(examItemKey)));
-  pool=examQuestions(bank,exam.filters||{subjects:[...new Set(exam.questions.map(q=>q.subject))],sources:[...new Set(exam.questions.map(q=>q.sourceId))]}).filter(q=>!used.has(examItemKey(q)));
+  const family=rows.filter(r=>sameExamPath(examParentPath(r),parent)),bankById=new Map(bank.map(q=>[q.id,q]));
+  const saved=family.flatMap(r=>r.questions),usedIds=new Set(saved.map(q=>q.id));
+  // Saved sets contain reordered choices and remapped letter references. Resolve
+  // their stable IDs to current source content before comparing equivalent rows.
+  const used=new Set(saved.map(q=>examItemKey(bankById.get(q.id)||q)));
+  pool=examQuestions(bank,exam.filters||{subjects:[...new Set(exam.questions.map(q=>q.subject))],sources:[...new Set(exam.questions.map(q=>q.sourceId))]}).filter(q=>!usedIds.has(q.id)&&!used.has(examItemKey(q)));
  }
  const [created]=createExamSets(pool,{count:exam.questions.length,mode:kind==='unused'?'different':'shuffle',options,distribution:exam.distribution||{mode:'original'}},random);
  if(kind==='shuffle'&&created.questions.length>1&&created.questions.every((q,i)=>q.id===exam.questions[i].id))created.questions.push(created.questions.shift());
