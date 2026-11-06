@@ -94,6 +94,18 @@ export function displayedAnswerLetter(choiceOrder,originalChoiceIndex){
   return displayedIndex<0?'?':'ABCD'[displayedIndex];
 }
 
+// Only a complete answer-reference expression is rewritten: object labels such
+// as "Methods A and C" and the name "C Language" are not option references.
+export function displayedChoiceText(question, originalIndex, order = [0,1,2,3]) {
+  const text = question.choices[originalIndex];
+  if (!/^(?:both|either|neither|only)\s+[A-D]\s+(?:and|or|nor|&)\s+[A-D](?:\s+(?:are\s+correct|above))?[.!]?$/i.test(String(text).trim())) return text;
+  if (!Array.isArray(order) || order.length !== question.choices.length || new Set(order).size !== order.length || order.some(i => !Number.isInteger(i) || i < 0 || i >= order.length)) return text;
+  if (order.every((original,index) => original === index)) return text;
+  // Replace simultaneously, so A -> B -> C cannot cascade. "Above" ceases to
+  // describe the positions after shuffling; explicit letters remain sufficient.
+  return text.replace(/\b[A-D]\b/gi, letter => displayedAnswerLetter(order, 'ABCD'.indexOf(letter.toUpperCase()))).replace(/\s+above\b/i,'');
+}
+
 export function practiceChoiceState(originalChoiceIndex,selectedAnswer,correctAnswer,practiceMode=true){
   if(!practiceMode||selectedAnswer===undefined)return originalChoiceIndex===selectedAnswer?'selected':'';
   if(originalChoiceIndex===correctAnswer)return 'correct';

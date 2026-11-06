@@ -1,6 +1,6 @@
 {
-  "versionCode": 24,
-  "versionName": "2.9.5",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.5/ESAS-Reviewer-v2.9.5.apk",
-  "releaseNotes": "Subject terminology glossary with 2,580 entries and search; corrected unrelated question diagrams, including cached quizzes and new Word exports. Existing answer keys, purchases and saved study data are preserved."
+  "versionCode": 25,
+  "versionName": "2.9.6",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.6/ESAS-Reviewer-v2.9.6.apk",
+  "releaseNotes": "Keeps combined-answer references correct after repeated quiz and Word-set shuffles; includes the published question-notation corrections. Saved study data, answer keys and protected Past Exam 2026 records are preserved."
 }

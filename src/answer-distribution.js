@@ -1,4 +1,4 @@
-import {isAggregateChoice} from './quiz-engine.js';
+import {isAggregateChoice,displayedChoiceText} from './quiz-engine.js';
 const shuffle=(values,random)=>{const result=[...values];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;};
 export function answerDistribution(questions){return questions.reduce((counts,q)=>{counts[q.answer]++;return counts;},[0,0,0,0]);}
 export function distributeAnswers(questions,{mode='original',counts=[]}={},random=Math.random){
@@ -15,6 +15,6 @@ export function distributeAnswers(questions,{mode='original',counts=[]}={},rando
  return meta.map(m=>{const {q,fixed}=m;let order;
  if(mode==='original'){order=q.choices.map((_,i)=>i);if(fixed!==undefined){order=order.filter(i=>i!==fixed);order.push(fixed);}}
  else{order=Array(4);order[assigned.get(m)]=q.answer;if(fixed!==undefined)order[3]=fixed;const remaining=shuffle(q.choices.map((_,i)=>i).filter(i=>i!==q.answer&&i!==fixed),random);for(let i=0;i<4;i++)if(order[i]===undefined)order[i]=remaining.shift();}
- return {...q,choices:order.map(i=>q.choices[i]),answer:order.indexOf(q.answer)};
+ return {...q,choices:order.map(i=>displayedChoiceText(q,i,order)),answer:order.indexOf(q.answer)};
  });
 }
