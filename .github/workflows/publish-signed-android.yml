@@ -1,0 +1,35 @@
+name: Publish verified signed Android asset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'downloads/ESAS-Reviewer-v2.9.8.apk'
+      - 'downloads/ESAS-Reviewer-v2.9.8.apk.sha256'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: signed-android-v2.9.8
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the signed-distribution checksum
+        working-directory: downloads
+        run: sha256sum --check ESAS-Reviewer-v2.9.8.apk.sha256
+      - name: Publish Android update before website update metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v2.9.8 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload v2.9.8 downloads/ESAS-Reviewer-v2.9.8.apk downloads/ESAS-Reviewer-v2.9.8.apk.sha256 --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create v2.9.8 downloads/ESAS-Reviewer-v2.9.8.apk downloads/ESAS-Reviewer-v2.9.8.apk.sha256 --repo "$GITHUB_REPOSITORY" --title "ESAS Reviewer v2.9.8" --notes "Adds verified Practice formula cards and clickable owner dashboard inventories. Existing questions, answers and study data are preserved."
+          fi
