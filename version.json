@@ -1,6 +1,6 @@
 {
-  "versionCode": 26,
-  "versionName": "2.9.7",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.7/ESAS-Reviewer-v2.9.7.apk",
-  "releaseNotes": "Keeps combined-answer references correct through repeated shuffles and prevents already-used questions from reappearing in unused Word sets. Existing study data and the published question pool are preserved."
+  "versionCode": 27,
+  "versionName": "2.9.8",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.8/ESAS-Reviewer-v2.9.8.apk",
+  "releaseNotes": "Adds item-specific Practice formula cards for 2026 even-numbered Exams 2\u201324, and searchable owner dashboard question, source, and review inventories. Existing question content, answers, and saved study data are preserved."
 }
