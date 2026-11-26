@@ -1,6 +1,6 @@
 {
-  "versionCode": 27,
-  "versionName": "2.9.8",
-  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.8/ESAS-Reviewer-v2.9.8.apk",
-  "releaseNotes": "Adds item-specific Practice formula cards for 2026 even-numbered Exams 2\u201324, and searchable owner dashboard question, source, and review inventories. Existing question content, answers, and saved study data are preserved."
+  "versionCode": 28,
+  "versionName": "2.9.9",
+  "updateUrl": "https://github.com/Kezero47/esas-reviewer-downloads/releases/download/v2.9.9/ESAS-Reviewer-v2.9.9.apk",
+  "releaseNotes": "Adds 400 review questions from ESAS Series 12\u201315 under Past Board Exam, organized by year. Source folders start collapsed. The new answer keys are pending review."
 }
